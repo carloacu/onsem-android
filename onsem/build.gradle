@@ -1,7 +1,24 @@
 plugins {
     id 'com.android.library'
     id 'kotlin-android'
+    id 'maven-publish'
 }
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+
+                groupId = 'com.github.carloacu'
+                artifactId = 'contextual-planner'
+                version = '1.0.0'
+            }
+        }
+    }
+}
+
+// Execute "./gradlew publishToMavenLocal" on the root of the repository to publish to maven
 
 build {
     dependsOn(preBuild)
@@ -14,6 +31,7 @@ build {
 
 android {
     compileSdk 30
+    ndkVersion "$ndk_version"
 
     defaultConfig {
         minSdk 28
