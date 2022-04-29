@@ -1,0 +1,6 @@
+[submodule "onsem"]
+	path = onsem/src/main/cpp/onsem
+	url = https://github.com/carloacu/onsem.git
+[submodule "boost"]
+	path = onsem/src/main/cpp/boost
+	url = https://github.com/carloacu/boost-submodules-for-onsem.git
