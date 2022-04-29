@@ -11,7 +11,7 @@ afterEvaluate {
                 from components.release
 
                 groupId = 'com.github.carloacu'
-                artifactId = 'contextual-planner'
+                artifactId = 'onsem'
                 version = '1.0.0'
             }
         }
