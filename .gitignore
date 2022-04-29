@@ -80,7 +80,7 @@ lint/tmp/
 /.idea/
 
 
-# Generated biary files
+# Generated binary files
 /src/main/cpp/build-databases
 /src/main/assets/linguistic
 
