@@ -78,3 +78,9 @@ lint/outputs/
 lint/tmp/
 # lint/reports/
 /.idea/
+
+
+# Generated biary files
+/src/main/cpp/build-databases
+/src/main/assets/linguistic
+
