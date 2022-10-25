@@ -9,7 +9,6 @@
 #include <memory>
 #include <jni.h>
 #include <onsem/common/keytostreams.hpp>
-#include <onsem/common/utility/make_unique.hpp>
 #include <onsem/texttosemantic/dbtype/linguisticdatabase.hpp>
 #include <onsem/texttosemantic/dbtype/semanticexpression/groundedexpression.hpp>
 #include <onsem/texttosemantic/dbtype/semanticgrounding/semanticresourcegrounding.hpp>
@@ -449,6 +448,20 @@ Java_com_onsem_OnsemKt_sayFeedback(
 
 
 extern "C"
+JNIEXPORT jstring JNICALL
+Java_com_onsem_OnsemKt_categorizeCpp(
+        JNIEnv *env, jclass /*clazz*/,
+        jobject semanticExpressionJObj) {
+    return convertCppExceptionsToJavaExceptionsAndReturnTheResult<jstring>(env, [&]() {
+        std::lock_guard<std::mutex> lock(_jniReferencesMutex);
+        auto &semExp = getSemExp(env, semanticExpressionJObj);
+        auto textCategory = memoryOperation::categorize(*semExp);
+        return env->NewStringUTF(semanticExpressionCategory_toStr(textCategory).c_str());
+    }, nullptr);
+}
+
+
+extern "C"
 JNIEXPORT void JNICALL
 Java_com_onsem_OnsemKt_addTrigger(
         JNIEnv *env, jclass /*clazz*/,
@@ -512,10 +525,10 @@ Java_com_onsem_OnsemKt_addTriggerToAResource(
 
             auto resourceTypeStr = toString(env, resourceTypeJStr);
             auto resourceIdStr = toString(env, resourceIdJStr);
-            auto resourceSemExp = mystd::make_unique<GroundedExpression>(
-                    mystd::make_unique<SemanticResourceGrounding>(resourceTypeStr,
-                                                                  SemanticLanguageEnum::UNKNOWN,
-                                                                  resourceIdStr));
+            auto resourceSemExp = std::make_unique<GroundedExpression>(
+                    std::make_unique<SemanticResourceGrounding>(resourceTypeStr,
+                                                                SemanticLanguageEnum::UNKNOWN,
+                                                                resourceIdStr));
 
             memoryOperation::addATrigger(std::move(triggerSemExp), std::move(resourceSemExp),
                                          semanticMemory, lingDb);
@@ -551,8 +564,8 @@ Java_com_onsem_OnsemKt_addPlannerActionToMemory(
                                                                SemanticSourceEnum::UNKNOWN,
                                                                lingDb);
 
-        auto answerSemExp = mystd::make_unique<GroundedExpression>(
-                mystd::make_unique<SemanticResourceGrounding>(itIsAnActionIdStr, language, actionIdStr));
+        auto answerSemExp = std::make_unique<GroundedExpression>(
+                std::make_unique<SemanticResourceGrounding>(itIsAnActionIdStr, language, actionIdStr));
 
         memoryOperation::resolveAgentAccordingToTheContext(triggerSemExp, semanticMemory, lingDb);
 

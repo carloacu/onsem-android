@@ -101,3 +101,35 @@ fun _getContextualAnnotationFromStr(contAnnotationStr: String?): ContextualAnnot
     return ContextualAnnotation.EMPTY
 }
 
+
+enum class ExpressionCategory {
+    ACTIONDEFINITION,
+    AFFIRMATION,
+    COMMAND,
+    CONDITION,
+    CONDITIONTOCOMMAND,
+    EXTERNALTEACHING,
+    NOMINALGROUP,
+    QUESTION
+}
+
+
+fun _getExpressionCategoryFromStr(expressionCategoryStr: String?): ExpressionCategory {
+    if (expressionCategoryStr == "actionDefinition")
+        return ExpressionCategory.ACTIONDEFINITION
+    if (expressionCategoryStr == "affirmation")
+        return ExpressionCategory.AFFIRMATION
+    if (expressionCategoryStr == "command")
+        return ExpressionCategory.COMMAND
+    if (expressionCategoryStr == "condition")
+        return ExpressionCategory.CONDITION
+    if (expressionCategoryStr == "conditionToCommand")
+        return ExpressionCategory.CONDITIONTOCOMMAND
+    if (expressionCategoryStr == "externalTeaching")
+        return ExpressionCategory.EXTERNALTEACHING
+    if (expressionCategoryStr == "nominalGroup")
+        return ExpressionCategory.NOMINALGROUP
+    if (expressionCategoryStr == "question")
+        return ExpressionCategory.QUESTION
+    return ExpressionCategory.NOMINALGROUP
+}

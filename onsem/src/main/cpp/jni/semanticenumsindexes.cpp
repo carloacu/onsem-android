@@ -52,6 +52,16 @@ namespace {
             {"PROPERTY",  SemanticSourceEnum::PROPERTY},
             {"UNKNOWN",  SemanticSourceEnum::UNKNOWN}
     };
+    static const std::map<std::string, SemanticExpressionCategory> _javaToCppSemanticExpressionCategoryEnum{
+            {"ACTIONDEFINITION", SemanticExpressionCategory::ACTIONDEFINITION},
+            {"AFFIRMATION", SemanticExpressionCategory::AFFIRMATION},
+            {"COMMAND", SemanticExpressionCategory::COMMAND},
+            {"CONDITION", SemanticExpressionCategory::CONDITION},
+            {"CONDITIONTOCOMMAND", SemanticExpressionCategory::CONDITIONTOCOMMAND},
+            {"EXTERNALTEACHING", SemanticExpressionCategory::EXTERNALTEACHING},
+            {"NOMINALGROUP", SemanticExpressionCategory::NOMINALGROUP},
+            {"QUESTION", SemanticExpressionCategory::QUESTION}
+    };
 
     int _getOrdinal(
             JNIEnv *env,
@@ -138,7 +148,12 @@ SemanticEnumsIndexes::SemanticEnumsIndexes(JNIEnv *env)
           javaOrdinalSemanticSourceEnumToCpp(
                   _getVectorOfCppEnumValues(env,
                                             semanticSourceEnumClassName,
-                                            _javaToCppSemanticSourceEnum)) {
+                                            _javaToCppSemanticSourceEnum)),
+          expressionCategoryEnumClassName("com/onsem/ExpressionCategory"),
+          javaOrdinalSemanticExpressionCategoryEnumToCpp(
+                  _getVectorOfCppEnumValues(env,
+                                            expressionCategoryEnumClassName,
+                                            _javaToCppSemanticExpressionCategoryEnum)) {
 }
 
 const SemanticEnumsIndexes &getSemanticEnumsIndexes(JNIEnv *env) {

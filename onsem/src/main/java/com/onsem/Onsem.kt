@@ -256,6 +256,21 @@ external fun sayFeedback(
 ): SemanticExpression?
 
 
+private external fun categorizeCpp(semanticExpression: SemanticExpression): String
+
+/**
+ * Find the type of sentence of an input text.<br/>
+ * The type of sentence can be affirmation, question, condition, ... (cf ExpressionCategory enum)
+ * @param semanticExpression Input text stored in a semantic expression.
+ * @return A ExpressionCategory enum value corresponding of the type of sentence detected.
+ */
+fun categorize(
+    semanticExpression: SemanticExpression,
+): ExpressionCategory {
+    return _getExpressionCategoryFromStr(categorizeCpp(semanticExpression))
+}
+
+
 external fun addTrigger(
     trigger: String,
     answer: String,

@@ -49,13 +49,13 @@ Java_com_onsem_RecommendationsFinderKt_newRecommendationsFinder(
 
             auto recommendationContainer = std::make_unique<SemanticRecommendationsContainer>();
             addGroundingCoef(recommendationContainer->goundingsToCoef,
-                             mystd::make_unique<GroundedExpression>(
-                                     mystd::make_unique<SemanticAgentGrounding>(
+                             std::make_unique<GroundedExpression>(
+                                     std::make_unique<SemanticAgentGrounding>(
                                              SemanticAgentGrounding::currentUser)),
                              1, lingDb);
             addGroundingCoef(recommendationContainer->goundingsToCoef,
-                             mystd::make_unique<GroundedExpression>(
-                                     mystd::make_unique<SemanticAgentGrounding>(
+                             std::make_unique<GroundedExpression>(
+                                     std::make_unique<SemanticAgentGrounding>(
                                              SemanticAgentGrounding::me)),
                              1, lingDb);
             _idToRecommendationContainer.emplace(id, std::move(recommendationContainer));

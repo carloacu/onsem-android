@@ -9,7 +9,6 @@
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include <onsem/common/keytostreams.hpp>
-#include <onsem/common/utility/make_unique.hpp>
 #include <onsem/texttosemantic/linguisticanalyzer.hpp>
 #include <onsem/texttosemantic/dbtype/linguisticdatabase.hpp>
 

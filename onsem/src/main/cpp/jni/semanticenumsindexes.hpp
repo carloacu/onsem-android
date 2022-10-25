@@ -10,6 +10,7 @@
 #include <onsem/common/enum/semanticreferencetype.hpp>
 #include <onsem/common/enum/semanticsourceenum.hpp>
 #include <onsem/semantictotext/enum/semantictypeoffeedback.hpp>
+#include <onsem/semantictotext/enum/semanticexpressioncategory.hpp>
 
 enum class NaturalLanguagePolarity {
     IDENTICAL,
@@ -46,6 +47,8 @@ struct SemanticEnumsIndexes {
     std::vector<onsem::SemanticTypeOfFeedback> javaOrdinalTypeOfFeedbackToCpp;
     std::string semanticSourceEnumClassName;
     std::vector<onsem::SemanticSourceEnum> javaOrdinalSemanticSourceEnumToCpp;
+    std::string expressionCategoryEnumClassName;
+    std::vector<onsem::SemanticExpressionCategory> javaOrdinalSemanticExpressionCategoryEnumToCpp;
 };
 
 const SemanticEnumsIndexes &getSemanticEnumsIndexes(JNIEnv *env);
