@@ -18,6 +18,6 @@ allprojects {
 ### Step 2. Add the dependency
 ```Kotlin
 dependencies {
-    implementation 'com.github.carloacu:onsem-android:1.0.4'
+    implementation 'com.github.carloacu:onsem-android:1.0.6'
 }
 ```
