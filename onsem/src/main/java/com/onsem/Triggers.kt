@@ -24,6 +24,16 @@ external fun addTriggerToAResource(
     linguisticDatabase: LinguisticDatabase
 )
 
+external fun addPlannerActionToMemory(
+    trigger: String,
+    itIsAnActionId: String,
+    actionId: String,
+    parameters: Map<String, Array<String>>,
+    locale: Locale,
+    semanticMemory: SemanticMemory,
+    linguisticDatabase: LinguisticDatabase
+)
+
 fun reactFromTrigger(
     semanticExpression: SemanticExpression,
     locale: Locale,
@@ -41,7 +51,6 @@ fun reactFromTrigger(
         )
     )
 }
-
 
 private external fun reactFromTriggerCpp(
     semanticExpression: SemanticExpression,

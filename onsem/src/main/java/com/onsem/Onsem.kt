@@ -254,16 +254,6 @@ fun categorize(
 }
 
 
-external fun addPlannerActionToMemory(
-    trigger: String,
-    itIsAnActionId: String,
-    actionId: String,
-    locale: Locale,
-    semanticMemory: SemanticMemory,
-    linguisticDatabase: LinguisticDatabase
-)
-
-
 /**
  * Enable the possibility to execute the say command. (with the execute() function for example)
  * @param semanticMemory Semantic memory.

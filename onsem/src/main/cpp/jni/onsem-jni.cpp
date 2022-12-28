@@ -465,58 +465,6 @@ Java_com_onsem_OnsemKt_categorizeCpp(
 }
 
 
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_onsem_OnsemKt_addPlannerActionToMemory(
-        JNIEnv *env, jclass /*clazz*/,
-        jstring triggerJStr,
-        jstring itIsAnActionIdJStr,
-        jstring actionIdJStr,
-        jobject locale,
-        jobject semanticMemoryJObj,
-        jobject linguisticDatabaseJObj) {
-
-    auto triggerStr = toString(env, triggerJStr);
-    auto itIsAnActionIdStr = toString(env, itIsAnActionIdJStr);
-    auto actionIdStr = toString(env, actionIdJStr);
-    auto language = toLanguage(env, locale);
-    auto &semanticMemory = getSemanticMemory(env, semanticMemoryJObj);
-    auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
-
-    if (!triggerStr.empty()) {
-        auto textProcToRobot = TextProcessingContext::getTextProcessingContextToRobot(
-                language);
-        textProcToRobot.setUsAsEverybody();
-        textProcToRobot.isTimeDependent = false;
-        auto triggerSemExp = converter::textToContextualSemExp(triggerStr, textProcToRobot,
-                                                               SemanticSourceEnum::UNKNOWN,
-                                                               lingDb);
-
-        auto answerSemExp = std::make_unique<GroundedExpression>(
-                std::make_unique<SemanticResourceGrounding>(itIsAnActionIdStr, language, actionIdStr));
-
-        memoryOperation::resolveAgentAccordingToTheContext(triggerSemExp, semanticMemory, lingDb);
-
-        auto infinitiveSemExpForm = converter::imperativeToInfinitive(*triggerSemExp);
-        if (infinitiveSemExpForm)
-        {
-            mystd::unique_propagate_const<UniqueSemanticExpression> reaction;
-            auto teachSemExp = converter::constructTeachSemExp(infinitiveSemExpForm->getSemExp().clone(), answerSemExp->clone());
-            memoryOperation::teach(reaction, semanticMemory, std::move(teachSemExp), lingDb,
-                                   memoryOperation::SemanticActionOperatorEnum::BEHAVIOR);
-
-            triggers::add(std::move(*infinitiveSemExpForm), answerSemExp->clone(),
-                          semanticMemory, lingDb);
-        }
-
-
-        triggers::add(std::move(triggerSemExp),
-                      std::move(answerSemExp),
-                      semanticMemory, lingDb);
-    }
-}
-
-
 
 extern "C"
 JNIEXPORT void JNICALL
