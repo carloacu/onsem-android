@@ -56,4 +56,14 @@ jint toDisposableWithIdId(JNIEnv *env, jobject object);
 
 
 
+jobjectArray stlStringVectorToJavaArray(JNIEnv *env, const std::vector<std::string>& stdVector);
+
+std::vector<std::string> javaArrayToStlStringVector(JNIEnv *env, jobjectArray jStrArray);
+
+jobject stlStringStringMapToJavaHashMap(JNIEnv *env, const std::map<std::string, std::string>& map);
+
+// Based on android platform code from: /media/jni/android_media_MediaMetadataRetriever.cpp
+void JavaHashMapToStlStringStringVectorMap(JNIEnv *env, jobject hashMap, std::map<std::string, std::vector<std::string>>& mapOut);
+
+
 #endif // SEMANTIC_ANDROID_JOBJECTSTOCPPTYPES_HPP

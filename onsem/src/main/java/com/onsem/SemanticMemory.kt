@@ -74,7 +74,7 @@ class SemanticMemory : DisposableWithId(newMemory()) {
         userId: String,
         fullname: String,
         linguisticDatabase: LinguisticDatabase
-    ): ExpressionHandleInMemory? {
+    ): ExpressionWithLinks? {
         return linkUserIdToFullName(id, userId, fullname, linguisticDatabase)
     }
 
@@ -98,7 +98,7 @@ private external fun linkUserIdToFullName(
     userId: String,
     fullname: String,
     linguisticDatabase: LinguisticDatabase
-): ExpressionHandleInMemory?
+): ExpressionWithLinks?
 
 private external fun subscribeToLearnedBehaviors(memoryId: Int, linguisticDatabase: LinguisticDatabase)
 private external fun flushFactsToAdd(memoryId: Int): Array<String>

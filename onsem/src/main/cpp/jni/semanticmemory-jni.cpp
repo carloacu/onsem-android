@@ -122,7 +122,7 @@ Java_com_onsem_SemanticMemoryKt_linkUserIdToFullName(
             auto &semanticMemory = semanticMemoryWithTrackers.semanticMemory;
             auto semExp = converter::agentIdWithNameToSemExp(userId, names);
             memoryOperation::resolveAgentAccordingToTheContext(semExp, semanticMemory, lingDb);
-            return newExpressionHandleInMemory(
+            return newExpressionWithLinks(
                     env,
                     memoryOperation::inform(std::move(semExp), semanticMemory, lingDb));
         });
@@ -142,7 +142,7 @@ Java_com_onsem_SemanticMemoryKt_subscribeToLearnedBehaviors(
         semanticMemoryWithTrackers.infActionAddedConnection.disconnect();
         semanticMemoryWithTrackers.infActionAddedConnection =
                 semanticMemory.memBloc.infActionAdded.connectUnsafe(
-                        [&](intSemId, const SemanticMemorySentence *pMemorySentencePtr) {
+                        [&](intSemId, const GroundedExpWithLinks* pMemorySentencePtr) {
                             if (pMemorySentencePtr != nullptr) {
                                 auto textProcToRobot = TextProcessingContext::getTextProcessingContextToRobot(
                                         SemanticLanguageEnum::FRENCH);

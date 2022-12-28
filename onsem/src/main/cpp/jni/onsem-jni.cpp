@@ -16,10 +16,11 @@
 #include <onsem/semantictotext/type/naturallanguageexpression.hpp>
 #include <onsem/semantictotext/semanticmemory/semanticmemory.hpp>
 #include <onsem/semantictotext/semanticmemory/semantictracker.hpp>
-#include <onsem/semantictotext/semanticmemory/expressionhandleinmemory.hpp>
+#include "onsem/semantictotext/semanticmemory/links/expressionwithlinks.hpp"
 #include <onsem/semantictotext/semexpoperators.hpp>
 #include <onsem/semantictotext/semanticconverter.hpp>
 #include <onsem/semantictotext/semexpoperators.hpp>
+#include <onsem/semantictotext/triggers.hpp>
 #include <onsem/texttosemantic/languagedetector.hpp>
 #include <onsem/semantictotext/executor/executorcontext.hpp>
 #include <onsem/semantictotext/executor/textexecutor.hpp>
@@ -37,7 +38,8 @@ using namespace onsem;
 namespace {
     /// Any JNI function that will deal with references maintained across the JNI should lock this mutex.
     std::mutex _jniReferencesMutex;
-    std::map<jint, std::shared_ptr<ExpressionHandleInMemory>> _idToExpWrapperForMemory;
+    std::map<jint, std::shared_ptr<ExpressionWithLinks>> _idToExpWrapperForMemory;
+
 
     struct JniExecutor : public TextExecutor {
         JniExecutor(SemanticMemory &pSemanticMemory,
@@ -65,12 +67,40 @@ namespace {
 
 
         FutureVoid _exposeResource(const SemanticResource &pResource,
+                                   const SemanticExpression* pInputSemExpPtr,
                                    const FutureVoid &pStopRequest) override {
+            std::map<std::string, std::vector<std::string>> parameters;
+            if (!pResource.parameterLabelsToQuestions.empty())
+            {
+                std::cout << "if (!pResource.parameterLabelsToQuestions.empty()) TRUE" << std::endl;
+                _extractParameters(parameters, pResource.parameterLabelsToQuestions,
+                                   pResource.language, pInputSemExpPtr);
+            } else {
+                std::cout << "if (!pResource.parameterLabelsToQuestions.empty()) FAlSE" << std::endl;
+            }
+
+
+
+            std::map<std::string, std::string> parametersSimplified;
+            for (auto& currParameter : parameters) {
+                std::cout << "currResourceParameter: " << currParameter.first << std::endl;
+                for (auto& currParameterValue : currParameter.second) {
+                    std::cout << "currResourceParameterValue: " << currParameterValue << std::endl;
+                    parametersSimplified[currParameter.first] = currParameterValue;
+                    break;
+                }
+            }
+
             jmethodID onResourceFun = _env->GetMethodID(_javaExecutorClass, "onResource",
-                                                        "(Ljava/lang/String;Ljava/lang/String;)V");
-            _env->CallVoidMethod(_jExecutor, onResourceFun, _env->NewStringUTF(pResource.label.c_str()), _env->NewStringUTF(pResource.value.c_str()));
-            return VirtualExecutor::_exposeResource(pResource, pStopRequest);
-        }
+                                                        "(Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V");
+            _env->CallVoidMethod(_jExecutor, onResourceFun,
+                                 _env->NewStringUTF(pResource.label.c_str()),
+                                 _env->NewStringUTF(pResource.value.c_str()),
+                                 stlStringStringMapToJavaHashMap(_env, parametersSimplified));
+
+            _addLogAutoResource(pResource, parameters);
+            return FutureVoid();
+          }
 
     private:
         JNIEnv *_env;
@@ -78,20 +108,24 @@ namespace {
         jobject _jExecutor;
     };
 
-    void _executeRobotStr(
-            JNIEnv *env,
-            SemanticLanguageEnum pLanguage,
-            SemanticMemory& pSemMemory,
-            linguistics::LinguisticDatabase& pLingDb,
-            UniqueSemanticExpression pUSemExp,
-            jobject jExecutor) {
-        auto outContext = TextProcessingContext::getTextProcessingContextFromRobot(pLanguage);
-        auto execContext = std::make_shared<ExecutorContext>(outContext);
-        std::string answer;
-        DefaultExecutorLogger logger(answer);
-        JniExecutor textExec(pSemMemory, pLingDb, logger, env, jExecutor);
-        textExec.runSemExp(std::move(pUSemExp), execContext);
-    }
+}
+
+
+void executeRobotStr(
+        JNIEnv *env,
+        SemanticLanguageEnum pLanguage,
+        SemanticMemory& pSemMemory,
+        linguistics::LinguisticDatabase& pLingDb,
+        UniqueSemanticExpression pUSemExp,
+        jobject jExecutor,
+        const SemanticExpression* pInputSemExpPtr) {
+    auto outContext = TextProcessingContext::getTextProcessingContextFromRobot(pLanguage);
+    auto execContext = std::make_shared<ExecutorContext>(outContext);
+    execContext->inputSemExpPtr = pInputSemExpPtr;
+    std::string answer;
+    DefaultExecutorLogger logger(answer);
+    JniExecutor textExec(pSemMemory, pLingDb, logger, env, jExecutor);
+    textExec.runSemExp(std::move(pUSemExp), execContext);
 }
 
 
@@ -127,15 +161,15 @@ template jintArray protectByMutexWithReturn<jintArray>(const std::function<jintA
 template jobjectArray protectByMutexWithReturn<jobjectArray>(const std::function<jobjectArray()> &pFunction);
 
 
-jobject newExpressionHandleInMemory(
+jobject newExpressionWithLinks(
         JNIEnv *env,
-        const std::shared_ptr<ExpressionHandleInMemory> &pExp) {
+        const std::shared_ptr<ExpressionWithLinks> &pExp) {
     if (!pExp)
         throw std::runtime_error("the ExpressionWrapperForMemory is empty");
     jint newKey = findMissingKey(_idToExpWrapperForMemory);
     _idToExpWrapperForMemory.emplace(newKey, pExp);
     jclass expressionWrapperForMemoryClass = env->FindClass(
-            "com/onsem/ExpressionHandleInMemory");
+            "com/onsem/ExpressionWithLinks");
     jmethodID expressionWrapperForMemoryConstructor =
             env->GetMethodID(expressionWrapperForMemoryClass, "<init>", "(I)V");
     return env->NewObject(expressionWrapperForMemoryClass, expressionWrapperForMemoryConstructor,
@@ -155,7 +189,7 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_onsem_OnsemKt_deleteExpressionWrapperForMemory(
+Java_com_onsem_OnsemKt_deleteExpressionWithLinks(
         JNIEnv *env, jclass /*clazz*/, jint expressionWrapperForMemoryId) {
     convertCppExceptionsToJavaExceptions(env, [&]() {
         std::lock_guard<std::mutex> lock(_jniReferencesMutex);
@@ -203,7 +237,7 @@ Java_com_onsem_OnsemKt_executeRobotStr(
                                                                 SemanticSourceEnum::UNKNOWN,
                                                                 lingDb);
 
-            _executeRobotStr(env, language, semanticMemory, lingDb, std::move(textSemExp), jExecutor);
+            executeRobotStr(env, language, semanticMemory, lingDb, std::move(textSemExp), jExecutor, nullptr);
         }
     });
 }
@@ -230,7 +264,7 @@ Java_com_onsem_OnsemKt_inform(
             reactions.push_back(pUSemExp->clone());
         });
 
-        auto res = newExpressionHandleInMemory(
+        auto res = newExpressionWithLinks(
                 env,
                 memoryOperation::inform(
                         semExp->clone(),
@@ -239,7 +273,7 @@ Java_com_onsem_OnsemKt_inform(
         semanticMemory.memBloc.actionProposalSignal.disconnectUnsafe(connection);
         for (auto& currReaction : reactions) {
             auto language = toLanguage(env, locale);
-            _executeRobotStr(env, language, semanticMemory, lingDb, std::move(currReaction), jExecutor);
+            executeRobotStr(env, language, semanticMemory, lingDb, std::move(currReaction), jExecutor, &*semExp);
         }
         return res;
     }, nullptr);
@@ -258,7 +292,7 @@ Java_com_onsem_OnsemKt_informAxiom(
         auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
         auto &semanticMemory = getSemanticMemory(env, semanticMemoryJObj);
         auto &semExp = getSemExp(env, semanticExpressionJObj);
-        return newExpressionHandleInMemory(
+        return newExpressionWithLinks(
                 env,
                 memoryOperation::informAxiom(
                         semExp->clone(),
@@ -291,37 +325,7 @@ Java_com_onsem_OnsemKt_reactCpp(
             return env->NewStringUTF("");
         auto reactionType = SemExpGetter::extractContextualAnnotation(**reaction);
         auto language = toLanguage(env, locale);
-        _executeRobotStr(env, language, semanticMemory, lingDb, std::move(*reaction), jExecutor);
-        return env->NewStringUTF(contextualAnnotation_toStr(reactionType).c_str());
-    }, nullptr);
-}
-
-
-extern "C"
-JNIEXPORT jstring JNICALL
-Java_com_onsem_OnsemKt_reactFromTriggerCpp(
-        JNIEnv *env, jclass /*clazz*/,
-        jobject semanticExpressionJObj,
-        jobject locale,
-        jobject semanticMemoryJObj,
-        jobject linguisticDatabaseJObj,
-        jobject jExecutor) {
-    return convertCppExceptionsToJavaExceptionsAndReturnTheResult<jstring>(env, [&]() {
-        std::lock_guard<std::mutex> lock(_jniReferencesMutex);
-        auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
-        auto &semanticMemory = getSemanticMemory(env, semanticMemoryJObj);
-        auto &semExp = getSemExp(env, semanticExpressionJObj);
-
-        mystd::unique_propagate_const<UniqueSemanticExpression> reaction;
-        memoryOperation::reactFromTrigger(
-                reaction, semanticMemory, semExp->clone(),
-                lingDb);
-
-        if (!reaction)
-            return env->NewStringUTF("");
-        auto reactionType = SemExpGetter::extractContextualAnnotation(**reaction);
-        auto language = toLanguage(env, locale);
-        _executeRobotStr(env, language, semanticMemory, lingDb, std::move(*reaction), jExecutor);
+        executeRobotStr(env, language, semanticMemory, lingDb, std::move(*reaction), jExecutor, &*semExp);
         return env->NewStringUTF(contextualAnnotation_toStr(reactionType).c_str());
     }, nullptr);
 }
@@ -463,82 +467,6 @@ Java_com_onsem_OnsemKt_categorizeCpp(
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_onsem_OnsemKt_addTrigger(
-        JNIEnv *env, jclass /*clazz*/,
-        jstring triggerJStr,
-        jstring answerJStr,
-        jobject locale,
-        jobject semanticMemoryJObj,
-        jobject linguisticDatabaseJObj) {
-    convertCppExceptionsToJavaExceptions(env, [&]() {
-        std::lock_guard<std::mutex> lock(_jniReferencesMutex);
-        auto language = toLanguage(env, locale);
-        auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
-        auto &semanticMemory = getSemanticMemory(env, semanticMemoryJObj);
-        {
-            auto triggerStr = toString(env, triggerJStr);
-            auto textProcessingContextToRobot = TextProcessingContext::getTextProcessingContextToRobot(
-                    language);
-            auto triggerSemExp = converter::textToContextualSemExp(triggerStr,
-                                                                   textProcessingContextToRobot,
-                                                                   SemanticSourceEnum::UNKNOWN,
-                                                                   lingDb);
-
-            auto answerStr = toString(env, answerJStr);
-            auto textProcessingContextFromRobot = TextProcessingContext::getTextProcessingContextFromRobot(
-                    language);
-            auto answerSemExp = converter::textToContextualSemExp(answerStr,
-                                                                  textProcessingContextFromRobot,
-                                                                  SemanticSourceEnum::UNKNOWN,
-                                                                  lingDb);
-
-            memoryOperation::addATrigger(std::move(triggerSemExp), std::move(answerSemExp),
-                                         semanticMemory, lingDb);
-        }
-    });
-}
-
-
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_onsem_OnsemKt_addTriggerToAResource(
-        JNIEnv *env, jclass /*clazz*/,
-        jstring triggerJStr,
-        jstring resourceTypeJStr,
-        jstring resourceIdJStr,
-        jobject locale,
-        jobject semanticMemoryJObj,
-        jobject linguisticDatabaseJObj) {
-    convertCppExceptionsToJavaExceptions(env, [&]() {
-        std::lock_guard<std::mutex> lock(_jniReferencesMutex);
-        auto language = toLanguage(env, locale);
-        auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
-        auto &semanticMemory = getSemanticMemory(env, semanticMemoryJObj);
-        {
-            auto triggerStr = toString(env, triggerJStr);
-            auto textProcessingContextToRobot = TextProcessingContext::getTextProcessingContextToRobot(
-                    language);
-            auto triggerSemExp = converter::textToContextualSemExp(triggerStr,
-                                                                   textProcessingContextToRobot,
-                                                                   SemanticSourceEnum::UNKNOWN,
-                                                                   lingDb);
-
-            auto resourceTypeStr = toString(env, resourceTypeJStr);
-            auto resourceIdStr = toString(env, resourceIdJStr);
-            auto resourceSemExp = std::make_unique<GroundedExpression>(
-                    std::make_unique<SemanticResourceGrounding>(resourceTypeStr,
-                                                                SemanticLanguageEnum::UNKNOWN,
-                                                                resourceIdStr));
-
-            memoryOperation::addATrigger(std::move(triggerSemExp), std::move(resourceSemExp),
-                                         semanticMemory, lingDb);
-        }
-    });
-}
-
-
-extern "C"
-JNIEXPORT void JNICALL
 Java_com_onsem_OnsemKt_addPlannerActionToMemory(
         JNIEnv *env, jclass /*clazz*/,
         jstring triggerJStr,
@@ -569,13 +497,6 @@ Java_com_onsem_OnsemKt_addPlannerActionToMemory(
 
         memoryOperation::resolveAgentAccordingToTheContext(triggerSemExp, semanticMemory, lingDb);
 
-        auto iWantThatYouSemExp = converter::imperativeToIWantThatYou(*triggerSemExp);
-        if (iWantThatYouSemExp)
-        {
-            memoryOperation::addATrigger(std::move(*iWantThatYouSemExp), answerSemExp->clone(),
-                                         semanticMemory, lingDb);
-        }
-
         auto infinitiveSemExpForm = converter::imperativeToInfinitive(*triggerSemExp);
         if (infinitiveSemExpForm)
         {
@@ -584,14 +505,14 @@ Java_com_onsem_OnsemKt_addPlannerActionToMemory(
             memoryOperation::teach(reaction, semanticMemory, std::move(teachSemExp), lingDb,
                                    memoryOperation::SemanticActionOperatorEnum::BEHAVIOR);
 
-            memoryOperation::addATrigger(std::move(*infinitiveSemExpForm), answerSemExp->clone(),
-                                         semanticMemory, lingDb);
+            triggers::add(std::move(*infinitiveSemExpForm), answerSemExp->clone(),
+                          semanticMemory, lingDb);
         }
 
 
-        memoryOperation::addATrigger(std::move(triggerSemExp),
-                                     std::move(answerSemExp),
-                                     semanticMemory, lingDb);
+        triggers::add(std::move(triggerSemExp),
+                      std::move(answerSemExp),
+                      semanticMemory, lingDb);
     }
 }
 

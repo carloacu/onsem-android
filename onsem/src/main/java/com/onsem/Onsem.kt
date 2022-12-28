@@ -41,7 +41,7 @@ abstract class DisposableWithId(
 
 abstract class JavaExecutor {
     abstract fun onTextToSay(text: String)
-    abstract fun onResource(label: String, value: String)
+    abstract fun onResource(label: String, value: String, parameters: Map<String, String>)
 }
 
 
@@ -52,13 +52,13 @@ abstract class JavaExecutor {
  * The dispose() function of this class only destroys the handle.
  * If you want to remove it from the semantic memory call forget() before to dispose this object.
  */
-class ExpressionHandleInMemory private constructor(id: Int) : DisposableWithId(id) {
+class ExpressionWithLinks private constructor(id: Int) : DisposableWithId(id) {
     override fun disposeImplementation(id: Int) {
-        deleteExpressionWrapperForMemory(id)
+        deleteExpressionWithLinks(id)
     }
 }
 
-private external fun deleteExpressionWrapperForMemory(id:Int)
+private external fun deleteExpressionWithLinks(id:Int)
 
 
 /**
@@ -103,7 +103,7 @@ external fun inform(
     semanticMemory: SemanticMemory,
     linguisticDatabase: LinguisticDatabase,
     executor: JavaExecutor
-): ExpressionHandleInMemory?
+): ExpressionWithLinks?
 
 
 /**
@@ -117,7 +117,7 @@ external fun informAxiom(
     semanticExpression: SemanticExpression,
     semanticMemory: SemanticMemory,
     linguisticDatabase: LinguisticDatabase
-): ExpressionHandleInMemory?
+): ExpressionWithLinks?
 
 
 fun react(
@@ -138,23 +138,6 @@ fun react(
     )
 }
 
-fun reactFromTrigger(
-    semanticExpression: SemanticExpression,
-    locale: Locale,
-    semanticMemory: SemanticMemory,
-    linguisticDatabase: LinguisticDatabase,
-    executor: JavaExecutor
-): ContextualAnnotation {
-    return _getContextualAnnotationFromStr(
-        reactFromTriggerCpp(
-            semanticExpression,
-            locale,
-            semanticMemory,
-            linguisticDatabase,
-            executor
-        )
-    )
-}
 
 /**
  * Remove a semantic expression for a semantic memory.
@@ -163,7 +146,7 @@ fun reactFromTrigger(
  * @param linguisticDatabase Linguistic database for the linguistic processing.
  */
 external fun forget(
-    expressionWrapperForMemory: ExpressionHandleInMemory,
+    expressionWithLinks: ExpressionWithLinks,
     semanticMemory: SemanticMemory,
     linguisticDatabase: LinguisticDatabase
 )
@@ -271,23 +254,6 @@ fun categorize(
 }
 
 
-external fun addTrigger(
-    trigger: String,
-    answer: String,
-    locale: Locale,
-    semanticMemory: SemanticMemory,
-    linguisticDatabase: LinguisticDatabase
-)
-
-external fun addTriggerToAResource(
-    trigger: String,
-    resourceType: String,
-    resourceId: String,
-    locale: Locale,
-    semanticMemory: SemanticMemory,
-    linguisticDatabase: LinguisticDatabase
-)
-
 external fun addPlannerActionToMemory(
     trigger: String,
     itIsAnActionId: String,
@@ -326,17 +292,7 @@ external fun getLocaleFromText(
 
 
 
-
 private external fun reactCpp(
-    semanticExpression: SemanticExpression,
-    locale: Locale,
-    semanticMemory: SemanticMemory,
-    linguisticDatabase: LinguisticDatabase,
-    executor: JavaExecutor
-): String?
-
-
-private external fun reactFromTriggerCpp(
     semanticExpression: SemanticExpression,
     locale: Locale,
     semanticMemory: SemanticMemory,

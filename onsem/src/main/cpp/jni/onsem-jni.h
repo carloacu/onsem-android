@@ -4,10 +4,22 @@
 #include <jni.h>
 #include <mutex>
 #include <map>
+#include "onsem/semantictotext/semanticmemory/links/expressionwithlinks.hpp"
 
 namespace onsem {
-    struct ExpressionHandleInMemory;
+    struct ExpressionWithLinks;
+    struct SemanticMemory;
+    struct SemanticExpression;
 }
+
+void executeRobotStr(
+        JNIEnv *env,
+        onsem::SemanticLanguageEnum pLanguage,
+        onsem::SemanticMemory& pSemMemory,
+        onsem::linguistics::LinguisticDatabase& pLingDb,
+        onsem::UniqueSemanticExpression pUSemExp,
+        jobject jExecutor,
+        const onsem::SemanticExpression* pInputSemExpPtr);
 
 void convertCppExceptionsToJavaExceptions(JNIEnv *env, const std::function<void()> &pFunction);
 
@@ -46,9 +58,9 @@ T convertCppExceptionsToJavaExceptionsAndReturnTheResult(
     return pDefaultReturn;
 }
 
-jobject newExpressionHandleInMemory(
+jobject newExpressionWithLinks(
         JNIEnv *env,
-        const std::shared_ptr<onsem::ExpressionHandleInMemory> &pExp);
+        const std::shared_ptr<onsem::ExpressionWithLinks> &pExp);
 
 
 #endif // SEMANTIC_ANDROID_SEMANTIC_JNI_H

@@ -5,7 +5,7 @@
 #include <sstream>
 #include <onsem/texttosemantic/dbtype/semanticexpression/groundedexpression.hpp>
 #include <onsem/texttosemantic/dbtype/semanticgrounding/semanticagentgrounding.hpp>
-#include <onsem/semantictotext/semanticrecommendations.hpp>
+#include <onsem/semantictotext/recommendations.hpp>
 #include <onsem/semantictotext/semanticconverter.hpp>
 #include "linguisticdatabase-jni.hpp"
 #include "onsem-jni.h"
@@ -122,7 +122,7 @@ Java_com_onsem_RecommendationsFinderKt_getRecommendations(
             auto &recommendationContainer = _getRecommendationsContainer(env,
                                                                          recommendationsFinderJObj);
             std::map<int, std::set<std::string>> recommendations;
-            getRecommendations(recommendations, *semExp, recommendationContainer, lingDb);
+            getRecommendations(recommendations, 100, *semExp, recommendationContainer, lingDb);
 
             std::list<std::string> recommendationsToReturn;
             std::size_t maxNbOfRecommendations = 3;

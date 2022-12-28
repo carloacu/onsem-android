@@ -135,3 +135,135 @@ jint toDisposableWithIdId(JNIEnv *env, jobject object) {
     jmethodID getIdFun = env->GetMethodID(semanticMemoryClass, "getId", "()I");
     return env->CallIntMethod(object, getIdFun);
 }
+
+
+
+jobjectArray stlStringVectorToJavaArray(JNIEnv *env, const std::vector<std::string>& stdVector) {
+    jobjectArray result;
+    result = (jobjectArray)env->NewObjectArray(stdVector.size(),
+                                               env->FindClass("java/lang/String"),
+                                               env->NewStringUTF(""));
+
+    jsize arrayElt = 0;
+    for (const auto& currElt : stdVector)
+        env->SetObjectArrayElement(result, arrayElt++, env->NewStringUTF(currElt.c_str()));
+    return result;
+}
+
+std::vector<std::string> javaArrayToStlStringVector(JNIEnv *env, jobjectArray jStrArray) {
+    std::vector<std::string> res;
+    int size = env->GetArrayLength(jStrArray);
+    for (int i = 0; i < size; ++i) {
+        auto resourceLabelJStr = reinterpret_cast<jstring>(env->GetObjectArrayElement(
+                jStrArray, i));
+        res.emplace_back(toString(env, resourceLabelJStr));
+        env->DeleteLocalRef(resourceLabelJStr);
+    }
+    return res;
+}
+
+
+jobject stlStringStringMapToJavaHashMap(JNIEnv *env, const std::map<std::string, std::string>& map) {
+    jclass mapClass = env->FindClass("java/util/HashMap");
+    if(mapClass == NULL)
+        return NULL;
+
+    jmethodID init = env->GetMethodID(mapClass, "<init>", "()V");
+    jobject hashMap = env->NewObject(mapClass, init);
+    jmethodID put = env->GetMethodID(mapClass, "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+
+    std::map<std::string, std::string>::const_iterator citr = map.begin();
+    for( ; citr != map.end(); ++citr) {
+        jstring keyJava = env->NewStringUTF(citr->first.c_str());
+        jstring valueJava = env->NewStringUTF(citr->second.c_str());
+
+        env->CallObjectMethod(hashMap, put, keyJava, valueJava);
+
+        env->DeleteLocalRef(keyJava);
+        env->DeleteLocalRef(valueJava);
+    }
+
+    jobject hashMapGobal = static_cast<jobject>(env->NewGlobalRef(hashMap));
+    env->DeleteLocalRef(hashMap);
+    env->DeleteLocalRef(mapClass);
+
+    return hashMapGobal;
+}
+
+
+// Based on android platform code from: /media/jni/android_media_MediaMetadataRetriever.cpp
+void JavaHashMapToStlStringStringVectorMap(JNIEnv *env, jobject hashMap, std::map<std::string, std::vector<std::string>>& mapOut) {
+    // Get the Map's entry Set.
+    jclass mapClass = env->FindClass("java/util/Map");
+    if (mapClass == nullptr) {
+        return;
+    }
+    jmethodID entrySet =
+            env->GetMethodID(mapClass, "entrySet", "()Ljava/util/Set;");
+    if (entrySet == nullptr) {
+        return;
+    }
+    jobject set = env->CallObjectMethod(hashMap, entrySet);
+    if (set == nullptr) {
+        return;
+    }
+    // Obtain an iterator over the Set
+    jclass setClass = env->FindClass("java/util/Set");
+    if (setClass == nullptr) {
+        return;
+    }
+    jmethodID iterator =
+            env->GetMethodID(setClass, "iterator", "()Ljava/util/Iterator;");
+    if (iterator == nullptr) {
+        return;
+    }
+    jobject iter = env->CallObjectMethod(set, iterator);
+    if (iter == nullptr) {
+        return;
+    }
+    // Get the Iterator method IDs
+    jclass iteratorClass = env->FindClass("java/util/Iterator");
+    if (iteratorClass == nullptr) {
+        return;
+    }
+    jmethodID hasNext = env->GetMethodID(iteratorClass, "hasNext", "()Z");
+    if (hasNext == nullptr) {
+        return;
+    }
+    jmethodID next =
+            env->GetMethodID(iteratorClass, "next", "()Ljava/lang/Object;");
+    if (next == nullptr) {
+        return;
+    }
+    // Get the Entry class method IDs
+    jclass entryClass = env->FindClass("java/util/Map$Entry");
+    if (entryClass == nullptr) {
+        return;
+    }
+    jmethodID getKey =
+            env->GetMethodID(entryClass, "getKey", "()Ljava/lang/Object;");
+    if (getKey == nullptr) {
+        return;
+    }
+    jmethodID getValue =
+            env->GetMethodID(env->FindClass("java/util/Map$Entry"), "getValue", "()Ljava/lang/Object;");
+    if (getValue == nullptr) {
+        return;
+    }
+    // Iterate over the entry Set
+    while (env->CallBooleanMethod(iter, hasNext)) {
+        jobject entry = env->CallObjectMethod(iter, next);
+        jstring key = (jstring) env->CallObjectMethod(entry, getKey);
+        auto value = javaArrayToStlStringVector(env, (jobjectArray)env->CallObjectMethod(entry, getValue));
+        const char* keyStr = env->GetStringUTFChars(key, nullptr);
+        if (!keyStr) {  // Out of memory
+            return;
+        }
+
+        mapOut.insert(std::make_pair(std::string(keyStr), value));
+
+        env->DeleteLocalRef(entry);
+        env->ReleaseStringUTFChars(key, keyStr);
+        env->DeleteLocalRef(key);
+    }
+}

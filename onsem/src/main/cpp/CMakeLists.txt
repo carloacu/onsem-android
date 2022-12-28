@@ -165,6 +165,7 @@ if (NOT BUILD_ONSEM_DATABASE)
           "jni/semanticmemory-jni.cpp"
           "jni/textprocessingcontext-jni.hpp"
           "jni/textprocessingcontext-jni.cpp"
+          "jni/triggers-jni.cpp"
     )
 
     if (COUT_TO_ANDROID_LOG)
