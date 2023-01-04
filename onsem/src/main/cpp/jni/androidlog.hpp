@@ -3,6 +3,7 @@
 
 #ifdef COUT_TO_ANDROID_LOG
 # include <android/log.h>
+# include <iostream>
 #endif // COUT_TO_ANDROID_LOG
 
 namespace {
