@@ -2,7 +2,7 @@
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include "onsem-jni.h"
-#include <onsem/common/enum/semanticlanguagetype.hpp>
+#include <onsem/common/enum/semanticlanguageenum.hpp>
 #include "jobjectstocpptypes.hpp"
 #include "keytoassetstreams.hpp"
 

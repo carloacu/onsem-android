@@ -65,4 +65,17 @@ class TriggersTests {
             reactFromTriggerStr(locale, "tell me who you are", semanticMemory, linguisticDb))
     }
 
+    @Test
+    fun triggersSpanish() {
+        val targetContext: Context = InstrumentationRegistry.getInstrumentation().targetContext
+        val semanticMemory = SemanticMemory()
+        val linguisticDb = LinguisticDatabase(targetContext.assets)
+        val locale = Locale("es", "ES")
+
+        addTriggerToAResource("Dime quien eres", "mission", "reaction-es-id", mapOf(), locale, semanticMemory, linguisticDb)
+
+        assertEquals("onResource(mission, reaction-es-id, {})",
+            reactFromTriggerStr(locale, "Dime quien eres", semanticMemory, linguisticDb))
+    }
+
 }

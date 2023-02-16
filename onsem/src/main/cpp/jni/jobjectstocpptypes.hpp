@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 #include <jni.h>
-#include <onsem/common/enum/semanticlanguagetype.hpp>
+#include <onsem/common/enum/semanticlanguageenum.hpp>
 #include <onsem/common/enum/semanticsourceenum.hpp>
 #include <onsem/semantictotext/enum/semantictypeoffeedback.hpp>
 

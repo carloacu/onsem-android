@@ -97,8 +97,9 @@ SemanticLanguageEnum toLanguage(JNIEnv *env, jobject locale) {
         return SemanticLanguageEnum::ENGLISH;
     if (languageStr == "ja")
         return SemanticLanguageEnum::JAPANESE;
-    throw std::runtime_error("language " + languageStr + " is not supported");
+    return SemanticLanguageEnum::OTHER;
 }
+
 
 
 SemanticTypeOfFeedback toTypeOfFeedback(
