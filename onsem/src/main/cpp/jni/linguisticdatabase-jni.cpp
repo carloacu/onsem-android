@@ -59,10 +59,6 @@ Java_com_onsem_LinguisticDatabaseKt_newLinguisticDatabase(
             iStreams.addMainDicFile(language, binaryDatabaseFolderWithSlash + languageFileName +
                                               "database.bdb",
                                     assetMgr);
-            iStreams.addAnimationsFile(language,
-                                       binaryDatabaseFolderWithSlash + languageFileName +
-                                       "animations.bdb",
-                                       assetMgr);
             iStreams.addSynthesizerFile(language,
                                         binaryDatabaseFolderWithSlash + languageFileName +
                                         "synthesizer.bdb",

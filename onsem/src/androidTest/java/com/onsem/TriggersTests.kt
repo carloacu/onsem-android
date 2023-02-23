@@ -59,7 +59,7 @@ class TriggersTests {
         val linguisticDb = LinguisticDatabase(targetContext.assets)
         val locale = Locale.ENGLISH
 
-        addTriggerToAResource("tell me who you are", "mission", "reaction-id", mapOf(), locale, semanticMemory, linguisticDb)
+        addTriggerToAResource("who are you", "mission", "reaction-id", mapOf(), locale, semanticMemory, linguisticDb)
 
         assertEquals("onResource(mission, reaction-id, {})",
             reactFromTriggerStr(locale, "tell me who you are", semanticMemory, linguisticDb))

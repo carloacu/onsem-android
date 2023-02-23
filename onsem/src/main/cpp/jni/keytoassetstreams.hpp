@@ -121,14 +121,6 @@ struct LinguisticDatabaseStreamsWithStorage {
         linguisticDatabaseStreams.languageToStreams[pLanguage].mainDicToStream = assetStreams.back().get();
     }
 
-    void addAnimationsFile(
-            onsem::SemanticLanguageEnum pLanguage,
-            const std::string &pFilename,
-            AAssetManager *pAssetMgr) {
-        assetStreams.push_back(std::make_unique<AssetIstream>(pAssetMgr, pFilename));
-        linguisticDatabaseStreams.languageToStreams[pLanguage].animationsToStream = assetStreams.back().get();
-    }
-
     void addSynthesizerFile(
             onsem::SemanticLanguageEnum pLanguage,
             const std::string &pFilename,
