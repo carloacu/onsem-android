@@ -65,6 +65,7 @@ class OnsemTests {
         val targetContext: Context = InstrumentationRegistry.getInstrumentation().targetContext
         val linguisticDb = LinguisticDatabase(targetContext.assets)
         assertEquals("Je ne sais pas qui je suis.", textToNotKnowing("qui es-tu", linguisticDb))
+        assertEquals("Je ne sais pas comment on fait un cheesecake.", textToNotKnowing("Comment fait-on un cheesecake ?", linguisticDb))
         assertEquals("Je ne sais pas sauter.", textToNotKnowing("saute", linguisticDb))
         assertEquals("", textToNotKnowing("je suis ton ami", linguisticDb))
     }
