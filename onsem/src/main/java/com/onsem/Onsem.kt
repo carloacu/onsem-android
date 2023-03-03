@@ -141,7 +141,7 @@ fun react(
 
 /**
  * Remove a semantic expression for a semantic memory.
- * @param expressionWrapperForMemory Semantic expression that has been added into the memory previously.
+ * @param expressionWithLinks Semantic expression that has been added into the memory previously.
  * @param semanticMemory Semantic memory.
  * @param linguisticDatabase Linguistic database for the linguistic processing.
  */
