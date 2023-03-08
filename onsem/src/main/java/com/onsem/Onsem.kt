@@ -1,10 +1,12 @@
 package com.onsem
 
-import com.onsem.LinguisticDatabase
 import java.lang.System.loadLibrary
 import java.util.*
 
 
+fun onsemVersion(): String {
+    return BuildConfig.ONSEM_VERSION_NAME
+}
 
 /**
  * Function to load the C++ library.
