@@ -68,6 +68,7 @@ if (NOT BUILD_ONSEM_DATABASE)
           "jni/semanticexpression-jni.cpp"
           "jni/semanticmemory-jni.hpp"
           "jni/semanticmemory-jni.cpp"
+          "jni/stringreplacer-jni.cpp"
           "jni/textprocessingcontext-jni.hpp"
           "jni/textprocessingcontext-jni.cpp"
           "jni/triggers-jni.cpp"

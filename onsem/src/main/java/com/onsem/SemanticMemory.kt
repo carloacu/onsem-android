@@ -1,6 +1,5 @@
 package com.onsem
 
-import com.onsem.LinguisticDatabase
 import java.lang.RuntimeException
 
 
