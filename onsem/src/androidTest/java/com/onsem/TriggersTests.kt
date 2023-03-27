@@ -50,6 +50,8 @@ class TriggersTests {
 
         assertEquals("onResource(mission, avance-id, {distance=0,3 mètre})",
             reactFromTriggerStr(locale, "Avance de 30 centimètres", semanticMemory, linguisticDb))
+        assertEquals("onResource(mission, avance-id, {distance=0,2 mètre})",
+            reactFromTriggerStr(locale, "J'aimerais que tu avances de 20 centimètres", semanticMemory, linguisticDb))
     }
 
     @Test
