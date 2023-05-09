@@ -11,9 +11,11 @@
 #include "onsem-jni.h"
 #include <onsem/texttosemantic/tool/semexpgetter.hpp>
 #include <onsem/texttosemantic/dbtype/semanticexpression/groundedexpression.hpp>
+#include <onsem/texttosemantic/dbtype/semanticexpression/metadataexpression.hpp>
 #include <onsem/semantictotext/triggers.hpp>
 #include <onsem/semantictotext/semanticconverter.hpp>
 #include <onsem/semantictotext/semexpoperators.hpp>
+#include <onsem/semantictotext/semanticmemory/semanticmemory.hpp>
 
 using namespace onsem;
 
@@ -23,6 +25,7 @@ namespace {
                                                    jstring resourceIdJStr,
                                                    jobject parametersJObj,
                                                    SemanticLanguageEnum pLanguage,
+                                                   const UniqueSemanticExpression& pTriggerSemExp,
                                                    const linguistics::LinguisticDatabase &pLingDb) {
         auto resourceTypeStr = toString(env, resourceTypeJStr);
         auto resourceIdStr = toString(env, resourceIdJStr);
@@ -39,9 +42,15 @@ namespace {
 
         for (auto &currParameter: parameters) {
             for (auto &currQuestion: currParameter.second) {
+                SemanticMemory semMemory;
+                memoryOperation::inform(
+                        std::make_unique<MetadataExpression>
+                                (SemanticSourceEnum::WRITTENTEXT, UniqueSemanticExpression(), pTriggerSemExp->clone()),
+                        semMemory, pLingDb);
                 auto paramSemExp = converter::textToContextualSemExp(currQuestion,
                                                                      paramQuestionProcContext,
                                                                      SemanticSourceEnum::UNKNOWN, pLingDb);
+                memoryOperation::mergeWithContext(paramSemExp, semMemory, pLingDb);
                 answerGrd->resource.parameterLabelsToQuestions[currParameter.first].emplace_back(std::move(paramSemExp));
             }
         }
@@ -113,7 +122,7 @@ Java_com_onsem_TriggersKt_addTriggerToAResource(
                                                                        textProcessingContextToRobot,
                                                                        SemanticSourceEnum::UNKNOWN,
                                                                        lingDb);
-                auto resourceSemExp = _createResourceSemExp(env, resourceTypeJStr, resourceIdJStr, parametersJObj, language, lingDb);
+                auto resourceSemExp = _createResourceSemExp(env, resourceTypeJStr, resourceIdJStr, parametersJObj, language, triggerSemExp, lingDb);
 
                 triggers::add(std::move(triggerSemExp), std::move(resourceSemExp),
                               semanticMemory, lingDb);
@@ -150,7 +159,7 @@ Java_com_onsem_TriggersKt_addPlannerActionToMemory(
                                                                SemanticSourceEnum::UNKNOWN,
                                                                lingDb);
 
-        auto resourceSemExp = _createResourceSemExp(env, itIsAnActionIdJStr, actionIdJStr, parametersJObj, language, lingDb);
+        auto resourceSemExp = _createResourceSemExp(env, itIsAnActionIdJStr, actionIdJStr, parametersJObj, language, triggerSemExp, lingDb);
 
         memoryOperation::resolveAgentAccordingToTheContext(triggerSemExp, semanticMemory, lingDb);
 

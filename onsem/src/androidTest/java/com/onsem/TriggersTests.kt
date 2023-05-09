@@ -41,10 +41,7 @@ class TriggersTests {
         val locale = Locale.FRENCH
 
         val parameters = HashMap<String, Array<String>>();
-        parameters["distance"] = arrayOf(
-            "De combien dois-je avancer en mètres ?",
-            "De combien dois-je aller vers l'avant en mètres ?",
-            "De combien dois-je aller tout droit en mètres ?")
+        parameters["distance"] = arrayOf("combien de mètres")
 
         addTriggerToAResource("Avance", "mission", "avance-id", parameters, locale, semanticMemory, linguisticDb)
 
