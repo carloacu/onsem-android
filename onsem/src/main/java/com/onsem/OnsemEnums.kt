@@ -73,8 +73,8 @@ enum class ContextualAnnotation {
 }
 
 
-fun _getContextualAnnotationFromStr(contAnnotationStr: String?): ContextualAnnotation {
-    if (contAnnotationStr == null || contAnnotationStr.isEmpty())
+fun getContextualAnnotationFromStr(contAnnotationStr: String?): ContextualAnnotation {
+    if (contAnnotationStr.isNullOrEmpty())
         return ContextualAnnotation.EMPTY
     if (contAnnotationStr == "notify_something_will_be_done")
         return ContextualAnnotation.NOTIFYSOMETHINGWILLBEDONE
@@ -114,7 +114,7 @@ enum class ExpressionCategory {
 }
 
 
-fun _getExpressionCategoryFromStr(expressionCategoryStr: String?): ExpressionCategory {
+fun getExpressionCategoryFromStr(expressionCategoryStr: String?): ExpressionCategory {
     if (expressionCategoryStr == "actionDefinition")
         return ExpressionCategory.ACTIONDEFINITION
     if (expressionCategoryStr == "affirmation")
@@ -132,4 +132,15 @@ fun _getExpressionCategoryFromStr(expressionCategoryStr: String?): ExpressionCat
     if (expressionCategoryStr == "question")
         return ExpressionCategory.QUESTION
     return ExpressionCategory.NOMINALGROUP
+}
+
+
+enum class SemanticOperator {
+    REACTFROMTRIGGER,
+
+    TEACHBEHAVIOR,
+    RESOLVECOMMAND, // convert to an order or an affirmation to the corresponding action without the starting condition
+
+    TEACHCONDITION,
+    EXECUTEFROMCONDITION // text of a starting condition to the corresponding action
 }

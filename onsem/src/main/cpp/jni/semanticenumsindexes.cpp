@@ -62,6 +62,13 @@ namespace {
             {"NOMINALGROUP", SemanticExpressionCategory::NOMINALGROUP},
             {"QUESTION", SemanticExpressionCategory::QUESTION}
     };
+    static const std::map<std::string, JavaOperatorEnum> _javaToCppJavaOperatorEnum{
+            {"REACTFROMTRIGGER", JavaOperatorEnum::REACTFROMTRIGGER},
+            {"TEACHBEHAVIOR", JavaOperatorEnum::TEACHBEHAVIOR},
+            {"RESOLVECOMMAND", JavaOperatorEnum::RESOLVECOMMAND},
+            {"TEACHCONDITION", JavaOperatorEnum::TEACHCONDITION},
+            {"EXECUTEFROMCONDITION", JavaOperatorEnum::EXECUTEFROMCONDITION}
+    };
 
     int _getOrdinal(
             JNIEnv *env,
@@ -153,7 +160,12 @@ SemanticEnumsIndexes::SemanticEnumsIndexes(JNIEnv *env)
           javaOrdinalSemanticExpressionCategoryEnumToCpp(
                   _getVectorOfCppEnumValues(env,
                                             expressionCategoryEnumClassName,
-                                            _javaToCppSemanticExpressionCategoryEnum)) {
+                                            _javaToCppSemanticExpressionCategoryEnum)),
+          javaOperatorEnumClassName("com/onsem/SemanticOperator"),
+          javaOrdinalJavaOperatorEnumToCpp(
+                  _getVectorOfCppEnumValues(env,
+                                            javaOperatorEnumClassName,
+                                            _javaToCppJavaOperatorEnum)) {
 }
 
 const SemanticEnumsIndexes &getSemanticEnumsIndexes(JNIEnv *env) {

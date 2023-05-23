@@ -330,6 +330,108 @@ Java_com_onsem_OnsemKt_reactCpp(
     }, nullptr);
 }
 
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_com_onsem_OnsemKt_teachBehaviorCpp(
+        JNIEnv *env, jclass /*clazz*/,
+        jobject semanticExpressionJObj,
+        jobject locale,
+        jobject semanticMemoryJObj,
+        jobject linguisticDatabaseJObj,
+        jobject jExecutor) {
+    return convertCppExceptionsToJavaExceptionsAndReturnTheResult<jstring>(env, [&]() {
+        std::lock_guard<std::mutex> lock(_jniReferencesMutex);
+        auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
+        auto &semanticMemory = getSemanticMemory(env, semanticMemoryJObj);
+        auto &semExp = getSemExp(env, semanticExpressionJObj);
+
+        mystd::unique_propagate_const<UniqueSemanticExpression> reaction;
+        memoryOperation::teach(
+                reaction, semanticMemory, semExp->clone(),
+                lingDb, memoryOperation::SemanticActionOperatorEnum::BEHAVIOR);
+
+        if (!reaction)
+            return env->NewStringUTF("");
+        auto reactionType = SemExpGetter::extractContextualAnnotation(**reaction);
+        auto language = toLanguage(env, locale);
+        executeRobotStr(env, language, semanticMemory, lingDb, std::move(*reaction), jExecutor, &*semExp);
+        return env->NewStringUTF(contextualAnnotation_toStr(reactionType).c_str());
+    }, nullptr);
+}
+
+
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_com_onsem_OnsemKt_callOperatorsCpp(
+        JNIEnv *env, jclass /*clazz*/,
+        jobjectArray operatorsJObj,
+        jobject semanticExpressionJObj,
+        jobject locale,
+        jobject semanticMemoryJObj,
+        jobject linguisticDatabaseJObj,
+        jobject jExecutor) {
+    return convertCppExceptionsToJavaExceptionsAndReturnTheResult<jstring>(env, [&]() {
+        std::lock_guard<std::mutex> lock(_jniReferencesMutex);
+        auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
+        auto &semanticMemory = getSemanticMemory(env, semanticMemoryJObj);
+        auto &semExp = getSemExp(env, semanticExpressionJObj);
+
+        mystd::unique_propagate_const<UniqueSemanticExpression> reaction;
+        int size = env->GetArrayLength(operatorsJObj);
+        for (int i = 0; i < size; ++i) {
+            auto operatorJObj = reinterpret_cast<jobject>(env->GetObjectArrayElement(
+                    operatorsJObj, i));
+            auto javaOperatorEnum = toJavaOperatorEnum(env, operatorJObj, getSemanticEnumsIndexes(env));
+            env->DeleteLocalRef(operatorJObj);
+
+            switch (javaOperatorEnum)
+            {
+                case JavaOperatorEnum::REACTFROMTRIGGER:
+                {
+                    triggers::match(
+                            reaction, semanticMemory, semExp->clone(),
+                            lingDb);
+                    break;
+                }
+                case JavaOperatorEnum::TEACHBEHAVIOR:
+                {
+                    memoryOperation::teach(
+                            reaction, semanticMemory, semExp->clone(),
+                            lingDb, memoryOperation::SemanticActionOperatorEnum::BEHAVIOR);
+                    break;
+                }
+                case JavaOperatorEnum::RESOLVECOMMAND:
+                {
+                    reaction = memoryOperation::resolveCommand(*semExp, semanticMemory, lingDb);
+                    break;
+                }
+                case JavaOperatorEnum::TEACHCONDITION:
+                {
+                    memoryOperation::teach(
+                            reaction, semanticMemory, semExp->clone(),
+                            lingDb, memoryOperation::SemanticActionOperatorEnum::CONDITION);
+                    break;
+                }
+                case JavaOperatorEnum::EXECUTEFROMCONDITION:
+                {
+                    reaction = memoryOperation::executeFromCondition(*semExp, semanticMemory, lingDb);
+                    break;
+                }
+            }
+            if (reaction)
+                break;
+        }
+
+        if (!reaction)
+            return env->NewStringUTF("");
+        auto reactionType = SemExpGetter::extractContextualAnnotation(**reaction);
+        auto language = toLanguage(env, locale);
+        executeRobotStr(env, language, semanticMemory, lingDb, std::move(*reaction), jExecutor, &*semExp);
+        return env->NewStringUTF(contextualAnnotation_toStr(reactionType).c_str());
+    }, nullptr);
+}
+
+
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -413,7 +515,7 @@ Java_com_onsem_OnsemKt_execute(
 
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_com_onsem_OnsemKt_executeFromTrigger(
+Java_com_onsem_OnsemKt_executeFromCondition(
         JNIEnv *env, jclass /*clazz*/,
         jobject semanticExpressionJObj,
         jobject semanticMemoryJObj,
@@ -423,9 +525,8 @@ Java_com_onsem_OnsemKt_executeFromTrigger(
         auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
         auto &semanticMemory = getSemanticMemory(env, semanticMemoryJObj);
         auto &semExp = getSemExp(env, semanticExpressionJObj);
-        return semanticExpressionPtrToJobject(env, memoryOperation::executeFromTrigger(*semExp,
-                                                                                       semanticMemory,
-                                                                                       lingDb));
+        return semanticExpressionPtrToJobject(env, memoryOperation::executeFromCondition(
+                *semExp, semanticMemory, lingDb));
     }, nullptr);
 }
 

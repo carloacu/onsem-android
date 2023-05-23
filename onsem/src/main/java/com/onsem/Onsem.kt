@@ -129,7 +129,7 @@ fun react(
     linguisticDatabase: LinguisticDatabase,
     executor: JavaExecutor
 ): ContextualAnnotation {
-    return _getContextualAnnotationFromStr(
+    return getContextualAnnotationFromStr(
         reactCpp(
             semanticExpression,
             locale,
@@ -139,6 +139,45 @@ fun react(
         )
     )
 }
+
+
+fun callOperators(
+    operators: Array<SemanticOperator>,
+    semanticExpression: SemanticExpression,
+    locale: Locale,
+    semanticMemory: SemanticMemory,
+    linguisticDatabase: LinguisticDatabase,
+    executor: JavaExecutor
+): ContextualAnnotation {
+    return getContextualAnnotationFromStr(
+        callOperatorsCpp(
+            operators,
+            semanticExpression,
+            locale,
+            semanticMemory,
+            linguisticDatabase,
+            executor
+        )
+    )
+}
+
+fun teachBehavior(
+    semanticExpression: SemanticExpression,
+    locale: Locale,
+    semanticMemory: SemanticMemory,
+    linguisticDatabase: LinguisticDatabase,
+    executor: JavaExecutor):  ContextualAnnotation {
+    return getContextualAnnotationFromStr(
+        teachBehaviorCpp(
+            semanticExpression,
+            locale,
+            semanticMemory,
+            linguisticDatabase,
+            executor
+        )
+    )
+}
+
 
 
 /**
@@ -212,7 +251,7 @@ external fun execute(
  * @param linguisticDatabase Linguistic database for the linguistic processing.
  * @return A semantic expression that represent the answer. Null is returned if no answer is found.
  */
-external fun executeFromTrigger(
+external fun executeFromCondition(
     semanticExpression: SemanticExpression,
     semanticMemory: SemanticMemory,
     linguisticDatabase: LinguisticDatabase
@@ -252,7 +291,7 @@ private external fun categorizeCpp(semanticExpression: SemanticExpression): Stri
 fun categorize(
     semanticExpression: SemanticExpression,
 ): ExpressionCategory {
-    return _getExpressionCategoryFromStr(categorizeCpp(semanticExpression))
+    return getExpressionCategoryFromStr(categorizeCpp(semanticExpression))
 }
 
 
@@ -291,3 +330,20 @@ private external fun reactCpp(
     linguisticDatabase: LinguisticDatabase,
     executor: JavaExecutor
 ): String?
+
+
+private external fun callOperatorsCpp(
+    operators: Array<SemanticOperator>,
+    semanticExpression: SemanticExpression,
+    locale: Locale,
+    semanticMemory: SemanticMemory,
+    linguisticDatabase: LinguisticDatabase,
+    executor: JavaExecutor): String
+
+
+private external fun teachBehaviorCpp(
+    semanticExpression: SemanticExpression,
+    locale: Locale,
+    semanticMemory: SemanticMemory,
+    linguisticDatabase: LinguisticDatabase,
+    executor: JavaExecutor): String

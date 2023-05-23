@@ -119,6 +119,14 @@ SemanticSourceEnum toSourceEnum(
                    pSemanticEnumsIndexes.javaOrdinalSemanticSourceEnumToCpp);
 }
 
+JavaOperatorEnum toJavaOperatorEnum(
+        JNIEnv *env,
+        jobject operatorEnumJobj,
+        const SemanticEnumsIndexes &pSemanticEnumsIndexes) {
+    return _toEnum(env, operatorEnumJobj, pSemanticEnumsIndexes.javaOperatorEnumClassName,
+                   pSemanticEnumsIndexes.javaOrdinalJavaOperatorEnumToCpp);
+}
+
 std::string toString(JNIEnv *env, jstring inputString) {
     if (env == nullptr)
         return "";

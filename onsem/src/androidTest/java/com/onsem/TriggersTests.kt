@@ -2,27 +2,12 @@ package com.onsem
 
 import android.content.Context
 import androidx.test.platform.app.InstrumentationRegistry
+import com.onsem.util.TestExecutor
 import org.junit.Assert.*
 import org.junit.Test
 import java.util.*
 
 class TriggersTests {
-
-    class TestExecutor : JavaExecutor() {
-        var str: String = ""
-
-        override fun onTextToSay(text: String) {
-            str += "onTextToSay($text)"
-        }
-
-        override fun onResource(
-            label: String,
-            value: String,
-            parameters: Map<String, String>
-        ) {
-            str += "onResource($label, $value, $parameters)"
-        }
-    }
 
     private fun reactFromTriggerStr(locale: Locale, input: String, semanticMemory: SemanticMemory, linguisticDb: LinguisticDatabase): String {
         val textProcessingContext = TextProcessingContext(toRobot = true, locale)

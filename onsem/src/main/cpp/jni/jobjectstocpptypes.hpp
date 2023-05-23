@@ -7,6 +7,7 @@
 #include <onsem/common/enum/semanticlanguageenum.hpp>
 #include <onsem/common/enum/semanticsourceenum.hpp>
 #include <onsem/semantictotext/enum/semantictypeoffeedback.hpp>
+#include "javaoperatorenum.hpp"
 
 
 struct SemanticEnumsIndexes;
@@ -50,6 +51,11 @@ onsem::SemanticTypeOfFeedback toTypeOfFeedback(
 onsem::SemanticSourceEnum toSourceEnum(
         JNIEnv *env,
         jobject sourceEnumJobj,
+        const SemanticEnumsIndexes &pSemanticEnumsIndexes);
+
+JavaOperatorEnum toJavaOperatorEnum(
+        JNIEnv *env,
+        jobject operatorEnumJobj,
         const SemanticEnumsIndexes &pSemanticEnumsIndexes);
 
 jint toDisposableWithIdId(JNIEnv *env, jobject object);

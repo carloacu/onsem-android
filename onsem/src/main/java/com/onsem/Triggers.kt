@@ -41,7 +41,7 @@ fun reactFromTrigger(
     linguisticDatabase: LinguisticDatabase,
     executor: JavaExecutor
 ): ContextualAnnotation {
-    return _getContextualAnnotationFromStr(
+    return getContextualAnnotationFromStr(
         reactFromTriggerCpp(
             semanticExpression,
             locale,

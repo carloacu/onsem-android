@@ -11,6 +11,8 @@
 #include <onsem/common/enum/semanticsourceenum.hpp>
 #include <onsem/semantictotext/enum/semantictypeoffeedback.hpp>
 #include <onsem/semantictotext/enum/semanticexpressioncategory.hpp>
+#include "javaoperatorenum.hpp"
+
 
 enum class NaturalLanguagePolarity {
     IDENTICAL,
@@ -49,6 +51,8 @@ struct SemanticEnumsIndexes {
     std::vector<onsem::SemanticSourceEnum> javaOrdinalSemanticSourceEnumToCpp;
     std::string expressionCategoryEnumClassName;
     std::vector<onsem::SemanticExpressionCategory> javaOrdinalSemanticExpressionCategoryEnumToCpp;
+    std::string javaOperatorEnumClassName;
+    std::vector<JavaOperatorEnum> javaOrdinalJavaOperatorEnumToCpp;
 };
 
 const SemanticEnumsIndexes &getSemanticEnumsIndexes(JNIEnv *env);
