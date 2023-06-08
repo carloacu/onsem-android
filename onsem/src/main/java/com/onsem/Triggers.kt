@@ -39,7 +39,8 @@ fun reactFromTrigger(
     locale: Locale,
     semanticMemory: SemanticMemory,
     linguisticDatabase: LinguisticDatabase,
-    executor: JavaExecutor
+    outputter: JiniOutputter,
+
 ): ContextualAnnotation {
     return getContextualAnnotationFromStr(
         reactFromTriggerCpp(
@@ -47,7 +48,7 @@ fun reactFromTrigger(
             locale,
             semanticMemory,
             linguisticDatabase,
-            executor
+            outputter
         )
     )
 }
@@ -57,5 +58,5 @@ private external fun reactFromTriggerCpp(
     locale: Locale,
     semanticMemory: SemanticMemory,
     linguisticDatabase: LinguisticDatabase,
-    executor: JavaExecutor
+    outputter: JiniOutputter
 ): String?

@@ -9,6 +9,7 @@
 #include "semanticmemory-jni.hpp"
 #include "semanticexpression-jni.hpp"
 #include "onsem-jni.h"
+#include "onsem/texttosemantic/languagedetector.hpp"
 #include <onsem/texttosemantic/tool/semexpgetter.hpp>
 #include <onsem/texttosemantic/dbtype/semanticexpression/groundedexpression.hpp>
 #include <onsem/texttosemantic/dbtype/semanticexpression/metadataexpression.hpp>
@@ -151,32 +152,43 @@ Java_com_onsem_TriggersKt_addPlannerActionToMemory(
     auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
 
     if (!triggerStr.empty()) {
-        auto textProcToRobot = TextProcessingContext::getTextProcessingContextToRobot(
-                language);
-        textProcToRobot.setUsAsEverybody();
-        textProcToRobot.isTimeDependent = false;
-        auto triggerSemExp = converter::textToContextualSemExp(triggerStr, textProcToRobot,
-                                                               SemanticSourceEnum::UNKNOWN,
-                                                               lingDb);
+        SemanticLanguageEnum textLanguage = language == SemanticLanguageEnum::UNKNOWN ?
+                                            linguistics::getLanguage(triggerStr, lingDb) : language;
 
-        auto resourceSemExp = _createResourceSemExp(env, itIsAnActionIdJStr, actionIdJStr, parametersJObj, language, triggerSemExp, lingDb);
+        TextProcessingContext triggerProcContext(SemanticAgentGrounding::currentUser,
+                                                 SemanticAgentGrounding::me,
+                                                 textLanguage);
+        triggerProcContext.setUsAsEverybody();
+        triggerProcContext.isTimeDependent = false;
+        auto actionSemExp = converter::textToSemExp(triggerStr, triggerProcContext, lingDb);
 
-        memoryOperation::resolveAgentAccordingToTheContext(triggerSemExp, semanticMemory, lingDb);
 
-        auto infinitiveSemExpForm = converter::imperativeToInfinitive(*triggerSemExp);
-        if (infinitiveSemExpForm)
+        auto itIsAnActionIdStr = toString(env, itIsAnActionIdJStr);
+        auto actionIdStr = toString(env, actionIdJStr);
+        std::map<std::string, std::vector<std::string>> parameters;
+        JavaHashMapToStlStringStringVectorMap(env, parametersJObj, parameters);
+
+        auto outputResourceGrdExp =
+                std::make_unique<GroundedExpression>(
+                        converter::createResourceWithParameters(itIsAnActionIdStr, actionIdStr, parameters,
+                                                                *actionSemExp, lingDb, textLanguage));
+
+        if (textLanguage == SemanticLanguageEnum::UNKNOWN)
+            textLanguage = semanticMemory.defaultLanguage;
+        mystd::unique_propagate_const<UniqueSemanticExpression> reaction;
+        auto infinitiveActionSemExp = converter::imperativeToInfinitive(*actionSemExp);
+        if (infinitiveActionSemExp)
         {
-            mystd::unique_propagate_const<UniqueSemanticExpression> reaction;
-            auto teachSemExp = converter::constructTeachSemExp(infinitiveSemExpForm->getSemExp().clone(), resourceSemExp->clone());
-            memoryOperation::teach(reaction, semanticMemory, std::move(teachSemExp), lingDb,
-                                   memoryOperation::SemanticActionOperatorEnum::BEHAVIOR);
+            auto inputSemExpInMemory = memoryOperation::teachSplitted(reaction, semanticMemory,
+                                                                      (*infinitiveActionSemExp)->clone(), outputResourceGrdExp->clone(),
+                                                                      lingDb, memoryOperation::SemanticActionOperatorEnum::BEHAVIOR);
 
-            triggers::add(std::move(*infinitiveSemExpForm), resourceSemExp->clone(),
+            triggers::add(std::move(*infinitiveActionSemExp), outputResourceGrdExp->clone(),
                           semanticMemory, lingDb);
         }
 
-        triggers::add(std::move(triggerSemExp),
-                      std::move(resourceSemExp),
+        triggers::add(std::move(actionSemExp),
+                      std::move(outputResourceGrdExp),
                       semanticMemory, lingDb);
     }
 }
@@ -206,7 +218,8 @@ Java_com_onsem_TriggersKt_reactFromTriggerCpp(
                 return env->NewStringUTF("");
             auto reactionType = SemExpGetter::extractContextualAnnotation(**reaction);
             auto language = toLanguage(env, locale);
-            executeRobotStr(env, language, semanticMemory, lingDb, std::move(*reaction), jExecutor, &*semExp);
+            runOutputter(env, language, semanticMemory, lingDb, **reaction, jExecutor,
+                         false, &*semExp);
             return env->NewStringUTF(contextualAnnotation_toStr(reactionType).c_str());
         });
     }, nullptr);

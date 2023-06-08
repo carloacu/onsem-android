@@ -200,6 +200,30 @@ jobject stlStringStringMapToJavaHashMap(JNIEnv *env, const std::map<std::string,
 }
 
 
+jobject stlStringVectorStringMapToJavaHashMap(JNIEnv *env, const std::map<std::string, std::vector<std::string>>& map) {
+    jclass mapClass = env->FindClass("java/util/HashMap");
+    if(mapClass == NULL)
+        return NULL;
+
+    jmethodID init = env->GetMethodID(mapClass, "<init>", "()V");
+    jobject hashMap = env->NewObject(mapClass, init);
+    jmethodID put = env->GetMethodID(mapClass, "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+
+    for (const auto& citr : map) {
+        jstring keyJava = env->NewStringUTF(citr.first.c_str());
+        jobjectArray valueJava = stlStringVectorToJavaArray(env, citr.second);
+        env->CallObjectMethod(hashMap, put, keyJava, valueJava);
+
+        env->DeleteLocalRef(keyJava);
+        env->DeleteLocalRef(valueJava);
+    }
+
+    auto hashMapGobal = static_cast<jobject>(env->NewGlobalRef(hashMap));
+    env->DeleteLocalRef(hashMap);
+    env->DeleteLocalRef(mapClass);
+    return hashMapGobal;
+}
+
 // Based on android platform code from: /media/jni/android_media_MediaMetadataRetriever.cpp
 void JavaHashMapToStlStringStringVectorMap(JNIEnv *env, jobject hashMap, std::map<std::string, std::vector<std::string>>& mapOut) {
     // Get the Map's entry Set.

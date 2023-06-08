@@ -102,45 +102,4 @@ data class TextWithPotentialLabel(
     val label: String = ""
 )
 
-fun semanticExpressionWithToTextWithResourceSplit(
-    semanticExpression: SemanticExpression,
-    locale: Locale,
-    semanticMemory: SemanticMemory,
-    linguisticDatabase: LinguisticDatabase,
-    resourcePrefixes: Array<String>
-): List<TextWithPotentialLabel> {
-    val textWithResourcePrinted = semanticExpressionToTextWithResourcePrinted(
-        semanticExpression,
-        locale,
-        semanticMemory,
-        linguisticDatabase
-    )
-    val textOrResourceList = textWithResourcePrinted.split('\\')
-    return textOrResourceList.mapNotNull { text ->
-        var res: TextWithPotentialLabel? = null
-        for (prefix in resourcePrefixes) {
-            val prefixWithEqual = "$prefix="
-            if (text.startsWith(prefixWithEqual) && text.length > prefixWithEqual.length) {
-                res = TextWithPotentialLabel(
-                    text.substring(prefixWithEqual.length, text.length),
-                    prefix
-                )
-                break
-            }
-        }
-        if (text.isEmpty())
-            null
-        else
-            res ?: TextWithPotentialLabel(text)
-    }
-}
-
-
 private external fun deleteSemanticExpression(semanticExpressionId: Int)
-
-private external fun semanticExpressionToTextWithResourcePrinted(
-    semanticExpression: SemanticExpression,
-    locale: Locale,
-    semanticMemory: SemanticMemory,
-    linguisticDatabase: LinguisticDatabase
-): String

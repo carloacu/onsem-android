@@ -41,13 +41,6 @@ abstract class DisposableWithId(
 }
 
 
-abstract class JavaExecutor {
-    abstract fun onTextToSay(text: String)
-    abstract fun onResource(label: String, value: String, parameters: Map<String, String>)
-}
-
-
-
 /**
  * Class that represent a semantic expression that has been added into a semantic memory.
  * These objects are needed to forget an expression.
@@ -79,18 +72,7 @@ fun isAName(text: String, linguisticDatabase: LinguisticDatabase): Boolean {
 private external fun isAProperNoun(text: String, linguisticDatabaseId: Int): Boolean
 
 
-/**
- * Reactions to input texts.
- * =========================
- */
 
-external fun executeRobotStr(
-    text: String,
-    locale: Locale,
-    semanticMemory: SemanticMemory,
-    linguisticDatabase: LinguisticDatabase,
-    executor: JavaExecutor
-)
 
 /**
  * Add a semantic expression in the memory.
@@ -104,7 +86,8 @@ external fun inform(
     locale: Locale,
     semanticMemory: SemanticMemory,
     linguisticDatabase: LinguisticDatabase,
-    executor: JavaExecutor
+    outputter: JiniOutputter,
+    informAboutWhatWasDone: Boolean
 ): ExpressionWithLinks?
 
 
@@ -127,7 +110,8 @@ fun react(
     locale: Locale,
     semanticMemory: SemanticMemory,
     linguisticDatabase: LinguisticDatabase,
-    executor: JavaExecutor
+    outputter: JiniOutputter,
+    informAboutWhatWasDone: Boolean
 ): ContextualAnnotation {
     return getContextualAnnotationFromStr(
         reactCpp(
@@ -135,7 +119,8 @@ fun react(
             locale,
             semanticMemory,
             linguisticDatabase,
-            executor
+            outputter,
+            informAboutWhatWasDone
         )
     )
 }
@@ -147,7 +132,7 @@ fun callOperators(
     locale: Locale,
     semanticMemory: SemanticMemory,
     linguisticDatabase: LinguisticDatabase,
-    executor: JavaExecutor
+    outputter: JiniOutputter
 ): ContextualAnnotation {
     return getContextualAnnotationFromStr(
         callOperatorsCpp(
@@ -156,7 +141,7 @@ fun callOperators(
             locale,
             semanticMemory,
             linguisticDatabase,
-            executor
+            outputter
         )
     )
 }
@@ -166,14 +151,16 @@ fun teachBehavior(
     locale: Locale,
     semanticMemory: SemanticMemory,
     linguisticDatabase: LinguisticDatabase,
-    executor: JavaExecutor):  ContextualAnnotation {
+    outputter: JiniOutputter,
+    informAboutWhatWasDone: Boolean):  ContextualAnnotation {
     return getContextualAnnotationFromStr(
         teachBehaviorCpp(
             semanticExpression,
             locale,
             semanticMemory,
             linguisticDatabase,
-            executor
+            outputter,
+            informAboutWhatWasDone
         )
     )
 }
@@ -328,7 +315,8 @@ private external fun reactCpp(
     locale: Locale,
     semanticMemory: SemanticMemory,
     linguisticDatabase: LinguisticDatabase,
-    executor: JavaExecutor
+    outputter: JiniOutputter,
+    informAboutWhatWasDone: Boolean
 ): String?
 
 
@@ -338,7 +326,7 @@ private external fun callOperatorsCpp(
     locale: Locale,
     semanticMemory: SemanticMemory,
     linguisticDatabase: LinguisticDatabase,
-    executor: JavaExecutor): String
+    outputter: JiniOutputter): String
 
 
 private external fun teachBehaviorCpp(
@@ -346,4 +334,5 @@ private external fun teachBehaviorCpp(
     locale: Locale,
     semanticMemory: SemanticMemory,
     linguisticDatabase: LinguisticDatabase,
-    executor: JavaExecutor): String
+    outputter: JiniOutputter,
+    informAboutWhatWasDone: Boolean): String

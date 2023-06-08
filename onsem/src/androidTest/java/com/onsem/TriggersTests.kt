@@ -2,7 +2,6 @@ package com.onsem
 
 import android.content.Context
 import androidx.test.platform.app.InstrumentationRegistry
-import com.onsem.util.TestExecutor
 import org.junit.Assert.*
 import org.junit.Test
 import java.util.*
@@ -13,9 +12,9 @@ class TriggersTests {
         val textProcessingContext = TextProcessingContext(toRobot = true, locale)
         val semExp = textToSemanticExpression(input, textProcessingContext, SemanticSourceEnum.UNKNOWN,
             semanticMemory, linguisticDb)
-        val testExecutor = TestExecutor()
-        reactFromTrigger(semExp, locale, semanticMemory, linguisticDb, testExecutor)
-        return testExecutor.str
+        val jiniOutputter = JiniOutputter()
+        reactFromTrigger(semExp, locale, semanticMemory, linguisticDb, jiniOutputter)
+        return jiniOutputter.rootExecutionData.toStr()
     }
 
     @Test

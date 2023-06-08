@@ -64,6 +64,8 @@ jint toDisposableWithIdId(JNIEnv *env, jobject object);
 
 jobjectArray stlStringVectorToJavaArray(JNIEnv *env, const std::vector<std::string>& stdVector);
 
+jobject stlStringVectorStringMapToJavaHashMap(JNIEnv *env, const std::map<std::string, std::vector<std::string>>& map);
+
 std::vector<std::string> javaArrayToStlStringVector(JNIEnv *env, jobjectArray jStrArray);
 
 jobject stlStringStringMapToJavaHashMap(JNIEnv *env, const std::map<std::string, std::string>& map);

@@ -12,13 +12,14 @@ namespace onsem {
     struct SemanticExpression;
 }
 
-void executeRobotStr(
+void runOutputter(
         JNIEnv *env,
         onsem::SemanticLanguageEnum pLanguage,
         onsem::SemanticMemory& pSemMemory,
         onsem::linguistics::LinguisticDatabase& pLingDb,
-        onsem::UniqueSemanticExpression pUSemExp,
-        jobject jExecutor,
+        const onsem::SemanticExpression& pSemExp,
+        jobject jOutputter,
+        bool pInformAboutWhatWasDone,
         const onsem::SemanticExpression* pInputSemExpPtr);
 
 void convertCppExceptionsToJavaExceptions(JNIEnv *env, const std::function<void()> &pFunction);

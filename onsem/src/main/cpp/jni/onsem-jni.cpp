@@ -22,8 +22,8 @@
 #include <onsem/semantictotext/semexpoperators.hpp>
 #include <onsem/semantictotext/triggers.hpp>
 #include <onsem/texttosemantic/languagedetector.hpp>
-#include <onsem/semantictotext/executor/executorcontext.hpp>
-#include <onsem/semantictotext/executor/textexecutor.hpp>
+#include <onsem/semantictotext/outputter/outputtercontext.hpp>
+#include <onsem/semantictotext/outputter/executiondataoutputter.hpp>
 #include <onsem/texttosemantic/tool/semexpgetter.hpp>
 #include "semanticenumsindexes.hpp"
 #include "androidlog.hpp"
@@ -41,91 +41,118 @@ namespace {
     std::map<jint, std::shared_ptr<ExpressionWithLinks>> _idToExpWrapperForMemory;
 
 
-    struct JniExecutor : public TextExecutor {
-        JniExecutor(SemanticMemory &pSemanticMemory,
-                    const linguistics::LinguisticDatabase &pLingDb,
-                    VirtualExecutorLogger &pLogOnSynchronousExecutionCase,
-                    JNIEnv *env,
-                    jobject jExecutor)
-                : TextExecutor(pSemanticMemory, pLingDb, pLogOnSynchronousExecutionCase),
+    struct JiniOutputter : public ExecutionDataOutputter {
+        JiniOutputter(SemanticMemory &pSemanticMemory,
+                      const linguistics::LinguisticDatabase &pLingDb,
+                      JNIEnv *env,
+                      jobject jOutputter,
+                      bool pInformAboutWhatWasDone)
+                : ExecutionDataOutputter(pSemanticMemory, pLingDb),
                   _env(env),
-                  _javaExecutorClass(env->FindClass("com/onsem/JavaExecutor")),
-                  _jExecutor(jExecutor) {
+                  _jiniOutputterClass(env->FindClass("com/onsem/JiniOutputter")),
+                  _jOutputter(jOutputter),
+                  _informAboutWhatWasDone(pInformAboutWhatWasDone) {
         }
 
-        virtual ~JniExecutor() {}
+        ~JiniOutputter() override = default;
 
-        FutureVoid _exposeText(
-                const std::string &pText,
-                SemanticLanguageEnum pLanguage,
-                const FutureVoid &pStopRequest) override {
-            jmethodID onTextToSayFun = _env->GetMethodID(_javaExecutorClass, "onTextToSay",
-                                                         "(Ljava/lang/String;)V");
-            _env->CallVoidMethod(_jExecutor, onTextToSayFun, _env->NewStringUTF(pText.c_str()));
-            return VirtualExecutor::_exposeText(pText, pLanguage, pStopRequest);
+        void _exposeText(const std::string& pText,
+                         SemanticLanguageEnum pLanguage) override
+        {
+            jmethodID exposeTextFun = _env->GetMethodID(_jiniOutputterClass, "exposeText",
+                                                        "(Ljava/lang/String;)V");
+            _env->CallVoidMethod(_jOutputter, exposeTextFun, _env->NewStringUTF(pText.c_str()));
+            if (_informAboutWhatWasDone)
+                ExecutionDataOutputter::_exposeText(pText, pLanguage);
         }
 
-
-        FutureVoid _exposeResource(const SemanticResource &pResource,
-                                   const SemanticExpression* pInputSemExpPtr,
-                                   const FutureVoid &pStopRequest) override {
-            std::map<std::string, std::vector<std::string>> parameters;
-            if (!pResource.parameterLabelsToQuestions.empty())
-            {
-                std::cout << "if (!pResource.parameterLabelsToQuestions.empty()) TRUE" << std::endl;
-                _extractParameters(parameters, pResource.parameterLabelsToQuestions,
-                                   pResource.language, pInputSemExpPtr);
-            } else {
-                std::cout << "if (!pResource.parameterLabelsToQuestions.empty()) FAlSE" << std::endl;
-            }
-
-
-
-            std::map<std::string, std::string> parametersSimplified;
-            for (auto& currParameter : parameters) {
-                std::cout << "currResourceParameter: " << currParameter.first << std::endl;
-                for (auto& currParameterValue : currParameter.second) {
-                    std::cout << "currResourceParameterValue: " << currParameterValue << std::endl;
-                    parametersSimplified[currParameter.first] = currParameterValue;
-                    break;
-                }
-            }
-
-            jmethodID onResourceFun = _env->GetMethodID(_javaExecutorClass, "onResource",
-                                                        "(Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V");
-            _env->CallVoidMethod(_jExecutor, onResourceFun,
+        void _exposeResource(const SemanticResource& pResource,
+                             const std::map<std::string, std::vector<std::string>>& pParameters) override
+        {
+            jmethodID exposeResourceFun = _env->GetMethodID(_jiniOutputterClass, "exposeResource",
+                                                            "(Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V");
+            _env->CallVoidMethod(_jOutputter, exposeResourceFun,
                                  _env->NewStringUTF(pResource.label.c_str()),
                                  _env->NewStringUTF(pResource.value.c_str()),
-                                 stlStringStringMapToJavaHashMap(_env, parametersSimplified));
+                                 stlStringVectorStringMapToJavaHashMap(_env, pParameters));
+            if (_informAboutWhatWasDone)
+                ExecutionDataOutputter::_exposeResource(pResource, pParameters);
+        }
 
-            _addLogAutoResource(pResource, parameters);
-            return FutureVoid();
-          }
+        void _beginOfScope(Link pLink) override
+        {
+            jmethodID beginOfScopeFun = _env->GetMethodID(_jiniOutputterClass, "beginOfScope",
+                                                          "(Ljava/lang/String;)V");
+
+            std::string linkStr;
+            switch (pLink)
+            {
+                case onsem::VirtualOutputter::Link::AND:
+                    linkStr = "AND";
+                    break;
+                case onsem::VirtualOutputter::Link::THEN:
+                    linkStr = "THEN";
+                    break;
+                case onsem::VirtualOutputter::Link::THEN_REVERSED:
+                    linkStr = "THEN_REVERSED";
+                    break;
+                case onsem::VirtualOutputter::Link::IN_BACKGROUND:
+                    linkStr = "IN_BACKGROUND";
+                    break;
+            }
+            _env->CallVoidMethod(_jOutputter, beginOfScopeFun,
+                                 _env->NewStringUTF(linkStr.c_str()));
+        }
+
+        void _endOfScope() override
+        {
+            jmethodID endOfScopeFun = _env->GetMethodID(_jiniOutputterClass, "endOfScope",
+                                                        "()V");
+            _env->CallVoidMethod(_jOutputter, endOfScopeFun);
+        }
+
+        void _resourceNbOfTimes(int pNumberOfTimes) override
+        {
+            jmethodID resourceNbOfTimesFun = _env->GetMethodID(_jiniOutputterClass, "resourceNbOfTimes",
+                                                               "(I)V");
+            _env->CallVoidMethod(_jOutputter, resourceNbOfTimesFun, pNumberOfTimes);
+        }
+
+        void _insideScopeNbOfTimes(int pNumberOfTimes) override
+        {
+            jmethodID insideScopeNbOfTimesFun = _env->GetMethodID(_jiniOutputterClass, "insideScopeNbOfTimes",
+                                                                  "(I)V");
+            _env->CallVoidMethod(_jOutputter, insideScopeNbOfTimesFun, pNumberOfTimes);
+        }
+
 
     private:
         JNIEnv *_env;
-        jclass _javaExecutorClass;
-        jobject _jExecutor;
+        jclass _jiniOutputterClass;
+        jobject _jOutputter;
+        bool _informAboutWhatWasDone;
     };
 
 }
 
 
-void executeRobotStr(
+void runOutputter(
         JNIEnv *env,
         SemanticLanguageEnum pLanguage,
         SemanticMemory& pSemMemory,
         linguistics::LinguisticDatabase& pLingDb,
-        UniqueSemanticExpression pUSemExp,
-        jobject jExecutor,
+        const SemanticExpression& pSemExp,
+        jobject jOutputter,
+        bool pInformAboutWhatWasDone,
         const SemanticExpression* pInputSemExpPtr) {
     auto outContext = TextProcessingContext::getTextProcessingContextFromRobot(pLanguage);
-    auto execContext = std::make_shared<ExecutorContext>(outContext);
-    execContext->inputSemExpPtr = pInputSemExpPtr;
+    OutputterContext outputterContext(outContext);
+    outputterContext.inputSemExpPtr = pInputSemExpPtr;
     std::string answer;
-    DefaultExecutorLogger logger(answer);
-    JniExecutor textExec(pSemMemory, pLingDb, logger, env, jExecutor);
-    textExec.runSemExp(std::move(pUSemExp), execContext);
+    JiniOutputter outputter(pSemMemory, pLingDb, env, jOutputter, pInformAboutWhatWasDone);
+    outputter.processSemExp(pSemExp, outputterContext);
+    if (pInformAboutWhatWasDone)
+        outputter.rootExecutionData.run(pSemMemory, pLingDb);
 }
 
 
@@ -156,8 +183,6 @@ template jstring protectByMutexWithReturn<jstring>(const std::function<jstring()
 
 template jint protectByMutexWithReturn<jint>(const std::function<jint()> &pFunction);
 
-template jintArray protectByMutexWithReturn<jintArray>(const std::function<jintArray()> &pFunction);
-
 template jobjectArray protectByMutexWithReturn<jobjectArray>(const std::function<jobjectArray()> &pFunction);
 
 
@@ -177,7 +202,7 @@ jobject newExpressionWithLinks(
 }
 
 
-jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+jint JNI_OnLoad(JavaVM* /*vm*/, void* /*reserved*/) {
 #ifdef COUT_TO_ANDROID_LOG
     // Also initialize the forwarding of logs to Android.
     std::cout.rdbuf(new forward_to_android);
@@ -215,36 +240,6 @@ Java_com_onsem_OnsemKt_isAProperNoun(
 
 
 extern "C"
-JNIEXPORT void JNICALL
-Java_com_onsem_OnsemKt_executeRobotStr(
-        JNIEnv *env, jclass /*clazz*/,
-        jstring textJStr,
-        jobject locale,
-        jobject semanticMemoryJObj,
-        jobject linguisticDatabaseJObj,
-        jobject jExecutor) {
-    convertCppExceptionsToJavaExceptions(env, [&]() {
-        std::lock_guard<std::mutex> lock(_jniReferencesMutex);
-        auto language = toLanguage(env, locale);
-        auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
-        auto &semanticMemory = getSemanticMemory(env, semanticMemoryJObj);
-        {
-            auto textStr = toString(env, textJStr);
-            auto textProcessingContextFromRobot = TextProcessingContext::getTextProcessingContextFromRobot(
-                    language);
-            auto textSemExp = converter::textToContextualSemExp(textStr,
-                                                                textProcessingContextFromRobot,
-                                                                SemanticSourceEnum::UNKNOWN,
-                                                                lingDb);
-
-            executeRobotStr(env, language, semanticMemory, lingDb, std::move(textSemExp), jExecutor, nullptr);
-        }
-    });
-}
-
-
-
-extern "C"
 JNIEXPORT jobject JNICALL
 Java_com_onsem_OnsemKt_inform(
         JNIEnv *env, jclass /*clazz*/,
@@ -252,7 +247,8 @@ Java_com_onsem_OnsemKt_inform(
         jobject locale,
         jobject semanticMemoryJObj,
         jobject linguisticDatabaseJObj,
-        jobject jExecutor) {
+        jobject jOutputter,
+        jboolean informAboutWhatWasDone) {
     return convertCppExceptionsToJavaExceptionsAndReturnTheResult<jobject>(env, [&]() {
         std::lock_guard<std::mutex> lock(_jniReferencesMutex);
         auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
@@ -261,7 +257,7 @@ Java_com_onsem_OnsemKt_inform(
 
         std::list<UniqueSemanticExpression> reactions;
         auto connection = semanticMemory.memBloc.actionProposalSignal.connectUnsafe([&](UniqueSemanticExpression& pUSemExp) {
-            reactions.push_back(pUSemExp->clone());
+            reactions.emplace_back(pUSemExp->clone());
         });
 
         auto res = newExpressionWithLinks(
@@ -273,7 +269,8 @@ Java_com_onsem_OnsemKt_inform(
         semanticMemory.memBloc.actionProposalSignal.disconnectUnsafe(connection);
         for (auto& currReaction : reactions) {
             auto language = toLanguage(env, locale);
-            executeRobotStr(env, language, semanticMemory, lingDb, std::move(currReaction), jExecutor, &*semExp);
+            runOutputter(env, language, semanticMemory, lingDb, *currReaction, jOutputter,
+                         informAboutWhatWasDone, &*semExp);
         }
         return res;
     }, nullptr);
@@ -309,7 +306,8 @@ Java_com_onsem_OnsemKt_reactCpp(
         jobject locale,
         jobject semanticMemoryJObj,
         jobject linguisticDatabaseJObj,
-        jobject jExecutor) {
+        jobject jOutputter,
+        jboolean informAboutWhatWasDone) {
     return convertCppExceptionsToJavaExceptionsAndReturnTheResult<jstring>(env, [&]() {
         std::lock_guard<std::mutex> lock(_jniReferencesMutex);
         auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
@@ -325,7 +323,8 @@ Java_com_onsem_OnsemKt_reactCpp(
             return env->NewStringUTF("");
         auto reactionType = SemExpGetter::extractContextualAnnotation(**reaction);
         auto language = toLanguage(env, locale);
-        executeRobotStr(env, language, semanticMemory, lingDb, std::move(*reaction), jExecutor, &*semExp);
+        runOutputter(env, language, semanticMemory, lingDb, **reaction, jOutputter,
+                     informAboutWhatWasDone, &*semExp);
         return env->NewStringUTF(contextualAnnotation_toStr(reactionType).c_str());
     }, nullptr);
 }
@@ -338,7 +337,8 @@ Java_com_onsem_OnsemKt_teachBehaviorCpp(
         jobject locale,
         jobject semanticMemoryJObj,
         jobject linguisticDatabaseJObj,
-        jobject jExecutor) {
+        jobject jOutputter,
+        jboolean informAboutWhatWasDone) {
     return convertCppExceptionsToJavaExceptionsAndReturnTheResult<jstring>(env, [&]() {
         std::lock_guard<std::mutex> lock(_jniReferencesMutex);
         auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
@@ -354,7 +354,8 @@ Java_com_onsem_OnsemKt_teachBehaviorCpp(
             return env->NewStringUTF("");
         auto reactionType = SemExpGetter::extractContextualAnnotation(**reaction);
         auto language = toLanguage(env, locale);
-        executeRobotStr(env, language, semanticMemory, lingDb, std::move(*reaction), jExecutor, &*semExp);
+        runOutputter(env, language, semanticMemory, lingDb, **reaction, jOutputter,
+                     informAboutWhatWasDone, &*semExp);
         return env->NewStringUTF(contextualAnnotation_toStr(reactionType).c_str());
     }, nullptr);
 }
@@ -369,13 +370,14 @@ Java_com_onsem_OnsemKt_callOperatorsCpp(
         jobject locale,
         jobject semanticMemoryJObj,
         jobject linguisticDatabaseJObj,
-        jobject jExecutor) {
+        jobject jOutputter) {
     return convertCppExceptionsToJavaExceptionsAndReturnTheResult<jstring>(env, [&]() {
         std::lock_guard<std::mutex> lock(_jniReferencesMutex);
         auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
         auto &semanticMemory = getSemanticMemory(env, semanticMemoryJObj);
         auto &semExp = getSemExp(env, semanticExpressionJObj);
 
+        bool informAboutWhatWasDone = false;
         mystd::unique_propagate_const<UniqueSemanticExpression> reaction;
         int size = env->GetArrayLength(operatorsJObj);
         for (int i = 0; i < size; ++i) {
@@ -398,11 +400,13 @@ Java_com_onsem_OnsemKt_callOperatorsCpp(
                     memoryOperation::teach(
                             reaction, semanticMemory, semExp->clone(),
                             lingDb, memoryOperation::SemanticActionOperatorEnum::BEHAVIOR);
+                    informAboutWhatWasDone = true;
                     break;
                 }
                 case JavaOperatorEnum::RESOLVECOMMAND:
                 {
                     reaction = memoryOperation::resolveCommand(*semExp, semanticMemory, lingDb);
+                    informAboutWhatWasDone = true;
                     break;
                 }
                 case JavaOperatorEnum::TEACHCONDITION:
@@ -410,11 +414,13 @@ Java_com_onsem_OnsemKt_callOperatorsCpp(
                     memoryOperation::teach(
                             reaction, semanticMemory, semExp->clone(),
                             lingDb, memoryOperation::SemanticActionOperatorEnum::CONDITION);
+                    informAboutWhatWasDone = true;
                     break;
                 }
                 case JavaOperatorEnum::EXECUTEFROMCONDITION:
                 {
                     reaction = memoryOperation::executeFromCondition(*semExp, semanticMemory, lingDb);
+                    informAboutWhatWasDone = true;
                     break;
                 }
             }
@@ -426,7 +432,8 @@ Java_com_onsem_OnsemKt_callOperatorsCpp(
             return env->NewStringUTF("");
         auto reactionType = SemExpGetter::extractContextualAnnotation(**reaction);
         auto language = toLanguage(env, locale);
-        executeRobotStr(env, language, semanticMemory, lingDb, std::move(*reaction), jExecutor, &*semExp);
+        runOutputter(env, language, semanticMemory, lingDb, **reaction, jOutputter,
+                     informAboutWhatWasDone, &*semExp);
         return env->NewStringUTF(contextualAnnotation_toStr(reactionType).c_str());
     }, nullptr);
 }

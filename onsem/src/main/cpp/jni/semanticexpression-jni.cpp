@@ -3,9 +3,8 @@
 #include <onsem/texttosemantic/dbtype/textprocessingcontext.hpp>
 #include <onsem/semantictotext/semanticconverter.hpp>
 #include <onsem/semantictotext/semexpoperators.hpp>
-#include <onsem/semantictotext/executor/executorcontext.hpp>
-#include <onsem/semantictotext/executor/executorlogger.hpp>
-#include <onsem/semantictotext/executor/textexecutor.hpp>
+#include <onsem/semantictotext/outputter/outputtercontext.hpp>
+#include <onsem/semantictotext/outputter/virtualoutputter.hpp>
 #include "onsem-jni.h"
 #include "jobjectstocpptypes.hpp"
 #include "linguisticdatabase-jni.hpp"
@@ -104,35 +103,6 @@ Java_com_onsem_SemanticExpressionKt_semanticExpressionToText(
         });
     }, nullptr);
 }
-
-extern "C"
-JNIEXPORT jstring JNICALL
-Java_com_onsem_SemanticExpressionKt_semanticExpressionToTextWithResourcePrinted(
-        JNIEnv *env, jclass /*clazz*/,
-        jobject semanticExpressionJobj,
-        jobject locale,
-        jobject semanticMemoryJObj,
-        jobject linguisticDatabaseJObj) {
-    return convertCppExceptionsToJavaExceptionsAndReturnTheResult<jstring>(env, [&]() {
-        return protectByMutexWithReturn<jstring>([&]() {
-            auto language = toLanguage(env, locale);
-
-            auto &lingDb = getLingDb(env, linguisticDatabaseJObj);
-            auto &semanticMemory = getSemanticMemory(env, semanticMemoryJObj);
-            auto &semExp = getSemExp(env, semanticExpressionJobj);
-            auto textProcFromRobot = TextProcessingContext::getTextProcessingContextFromRobot(
-                    language);
-            textProcFromRobot.vouvoiement = true;
-            auto execContext = std::make_shared<ExecutorContext>(textProcFromRobot);
-            std::string res;
-            ExecutorLoggerWithoutMetaInformation logger(res);
-            TextExecutor textExec(semanticMemory, lingDb, logger);
-            textExec.runSemExp(semExp->clone(), execContext);
-            return env->NewStringUTF(res.c_str());
-        });
-    }, nullptr);
-}
-
 
 
 extern "C"
