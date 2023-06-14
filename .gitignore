@@ -84,3 +84,4 @@ lint/tmp/
 /onsem/src/main/cpp/build-databases
 /onsem/src/main/assets/linguistic
 
+/onsem/src/main/res/raw/robot_triggers.txt

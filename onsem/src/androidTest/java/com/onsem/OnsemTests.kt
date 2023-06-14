@@ -1,9 +1,19 @@
 package com.onsem
 
 import android.content.Context
+import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.newSingleThreadContext
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
+import java.io.BufferedReader
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.io.InputStream
+import java.io.InputStreamReader
 import java.util.*
 
 class OnsemTests {
@@ -69,4 +79,107 @@ class OnsemTests {
         assertEquals("Je ne sais pas sauter.", textToNotKnowing("saute", linguisticDb))
         assertEquals("", textToNotKnowing("je suis ton ami", linguisticDb))
     }
+
+
+    private fun outputterToStr(
+        executionData: ExecutionData
+    ): String {
+        var res = ""
+        if (executionData.hasData()) {
+            if (executionData.text.isNotEmpty())
+                res += "robot: ${executionData.text}\n"
+            if (executionData.resourceLabel == "resLabel") {
+                res += executionData.resourceValue
+                if (executionData.resourceParameters.isNotEmpty()) {
+                    res += "("
+                    for (param in executionData.resourceParameters) {
+                        if (param.value.isNotEmpty())
+                           res += param.key + "=" + param.value[0]
+                    }
+                    res += ")"
+                }
+            }
+        }
+
+        for (toRunSequencially in executionData.toRunSequencially)
+            res += outputterToStr(toRunSequencially)
+        return res
+    }
+
+    /*
+    @Test
+    fun checkMatching() {
+        val targetContext: Context = InstrumentationRegistry.getInstrumentation().targetContext
+
+        runBlocking {
+            val semanticMemory = SemanticMemory()
+            val linguisticDatabase = LinguisticDatabase(targetContext.assets)
+            learnSayCommand(semanticMemory, linguisticDatabase)
+            allowToInformTheUserHowToTeach(semanticMemory)
+
+            val inputStream = targetContext.resources.openRawResource(R.raw.robot_triggers)
+            val inputStreamReader = InputStreamReader(inputStream)
+            val bufferedReader = BufferedReader(inputStreamReader)
+            while (true) {
+                val line = bufferedReader.readLine() ?: break
+                val lineSplitted = line.split('#')
+                if (lineSplitted.size < 4)
+                    continue
+                val label = lineSplitted[1]
+                val id = lineSplitted[2]
+                val text = lineSplitted[3]
+
+                if (label == "trigger") {
+                    val parameters = mutableMapOf<String, Array<String>>()
+                    for (i in lineSplitted.indices) {
+                        if (i > 3) {
+                            val paramSplitted = lineSplitted[i].split('=')
+                            if (paramSplitted.size > 1) {
+                                val paraValues = parameters[paramSplitted[0]]?.toMutableList()?: mutableListOf()
+                                paraValues.add(paramSplitted[1])
+                                parameters[paramSplitted[0]] = paraValues.toTypedArray()
+                            }
+                        }
+                    }
+
+                    addPlannerActionToMemory(
+                        text,
+                        "resLabel",
+                        id,
+                        parameters,
+                        locale,
+                        semanticMemory,
+                        linguisticDatabase
+                    )
+                } else if (label == "checkTrigger") {
+
+                    withSemanticExpression(
+                        text,
+                        true,
+                        locale,
+                        SemanticSourceEnum.ASR,
+                        semanticMemory,
+                        linguisticDatabase
+                    ) { inputSemanticExpression ->
+                        val jniOutputter = JiniOutputter()
+                        reactFromTrigger(
+                            inputSemanticExpression,
+                            locale,
+                            semanticMemory,
+                            linguisticDatabase,
+                            jniOutputter
+                        )
+
+                        val outputStr = outputterToStr(jniOutputter.rootExecutionData)
+
+                        if (outputStr != id)
+                            Log.e("MachingError", "trigger: $text, expected: $id, get: $outputStr")
+                    }
+                }
+            }
+        }
+    }
+*/
+
+
 }
